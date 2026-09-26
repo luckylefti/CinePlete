@@ -72,7 +72,7 @@ function updateBatchBar() {
   if (!bar) return
   const n = _selected.size
   if (n > 0) {
-    cnt.textContent = `${n} selected`
+    cnt.textContent = t("{n} selected", {n})
     bar.classList.add("visible")
     const ovsBtn = document.getElementById("batchOverseerr")
     const jssBtn = document.getElementById("batchJellyseerr")
@@ -84,11 +84,11 @@ function updateBatchBar() {
     // On Wishlist tab: swap "Add to Wishlist" → "Remove from Wishlist"
     if (wlBtn) {
       if (ACTIVE_TAB === "wishlist") {
-        wlBtn.textContent = "✕ Remove from Wishlist"
+        wlBtn.textContent = t("✕ Remove from Wishlist")
         wlBtn.classList.remove("btn-wishlist")
         wlBtn.classList.add("btn-ignore")
       } else {
-        wlBtn.textContent = "☆ Wishlist"
+        wlBtn.textContent = t("☆ Wishlist")
         wlBtn.classList.add("btn-wishlist")
         wlBtn.classList.remove("btn-ignore")
       }
@@ -114,7 +114,7 @@ async function batchRemoveFromWishlist() {
   // Keep DATA consistent so switching tabs doesn't restore the removed movies
   const removedSet = new Set(_selected.keys())
   DATA.wishlist = (DATA.wishlist || []).filter(w => !removedSet.has(w.tmdb))
-  toast(`${n} movie${n !== 1 ? "s" : ""} removed from Wishlist`, "gold")
+  toast(tn(n, "{n} movie removed from Wishlist", "{n} movies removed from Wishlist"), "gold")
   clearSelection()
 }
 
@@ -128,25 +128,25 @@ async function batchIgnoreMovies() {
     _purgeFromData(tmdb)
     document.querySelector(`.pc[data-tmdb="${tmdb}"]`)?.remove()
   }
-  toast(`${n} movie${n !== 1 ? "s" : ""} ignored`, "gold")
+  toast(tn(n, "{n} movie ignored", "{n} movies ignored"), "gold")
   clearSelection()
 }
 
 async function batchAddToRadarr() {
-  if (!CONFIG?.RADARR?.RADARR_ENABLED) { toast("Radarr not enabled", "error"); return }
+  if (!CONFIG?.RADARR?.RADARR_ENABLED) { toast(t("Radarr not enabled"), "error"); return }
   let ok = 0, fail = 0
   for (const [tmdb, m] of _selected) {
     const res = await api("/api/radarr/add", "POST", { tmdb, title: m.title })
     res.ok ? ok++ : fail++
   }
-  toast(`Radarr: ${ok} added${fail ? `, ${fail} failed` : ""}`, ok ? "success" : "error")
+  toast(fail ? t("Radarr: {ok} added, {fail} failed", {ok, fail}) : t("Radarr: {ok} added", {ok}), ok ? "success" : "error")
   clearSelection()
 }
 
 /* Add every movie in the provided array to Radarr (uses picker once if needed) */
 async function addAllToRadarr(movies) {
-  if (!CONFIG?.RADARR?.RADARR_ENABLED) { toast("Radarr not enabled", "error"); return }
-  if (!movies?.length) { toast("No movies to add", "gold"); return }
+  if (!CONFIG?.RADARR?.RADARR_ENABLED) { toast(t("Radarr not enabled"), "error"); return }
+  if (!movies?.length) { toast(t("No movies to add"), "gold"); return }
 
   // Get picker data once — show modal only if there's a real choice
   let qualityProfileId = null
@@ -156,7 +156,7 @@ async function addAllToRadarr(movies) {
     if (d.profiles.length > 1 || d.folders.length > 1) {
       // Show picker once for the whole batch; wait for user choice via callback
       const choice = await new Promise(resolve => {
-        _showRadarrPicker(null, `${movies.length} movies`, null, "primary", resolve)
+        _showRadarrPicker(null, t("{n} movies", {n: movies.length}), null, "primary", resolve)
       })
       if (!choice) return   // user cancelled
       qualityProfileId = choice.qualityProfileId
@@ -164,7 +164,7 @@ async function addAllToRadarr(movies) {
     }
   } catch (e) { /* Radarr unreachable — fall through with no overrides */ }
 
-  toast(`Adding ${movies.length} movies to Radarr…`, "gold")
+  toast(t("Adding {n} movies to Radarr…", {n: movies.length}), "gold")
   let ok = 0, fail = 0
   for (const m of movies) {
     const payload = { tmdb: m.tmdb, title: m.title }
@@ -173,7 +173,7 @@ async function addAllToRadarr(movies) {
     const res = await api("/api/radarr/add", "POST", payload)
     res.ok ? ok++ : fail++
   }
-  toast(`Radarr: ${ok} added${fail ? `, ${fail} failed` : ""}`, ok ? "success" : "error")
+  toast(fail ? t("Radarr: {ok} added, {fail} failed", {ok, fail}) : t("Radarr: {ok} added", {ok}), ok ? "success" : "error")
 }
 
 async function batchAddToWishlist() {
@@ -184,40 +184,40 @@ async function batchAddToWishlist() {
     if (!DATA.wishlist.find(w => w.tmdb === tmdb))
       DATA.wishlist.push({ ...m, wishlist: true })
   }
-  toast(`${n} movie${n !== 1 ? "s" : ""} added to Wishlist`, "gold")
+  toast(tn(n, "{n} movie added to Wishlist", "{n} movies added to Wishlist"), "gold")
   clearSelection()
 }
 
 async function batchAddToOverseerr() {
-  if (!CONFIG?.OVERSEERR?.OVERSEERR_ENABLED) { toast("Overseerr not enabled", "error"); return }
+  if (!CONFIG?.OVERSEERR?.OVERSEERR_ENABLED) { toast(t("Overseerr not enabled"), "error"); return }
   let ok = 0, fail = 0
   for (const [tmdb] of _selected) {
     const res = await api("/api/overseerr/add", "POST", { tmdb })
     res.ok ? ok++ : fail++
   }
-  toast(`Overseerr: ${ok} requested${fail ? `, ${fail} failed` : ""}`, ok ? "success" : "error")
+  toast(fail ? t("{service}: {ok} requested, {fail} failed", {service: "Overseerr", ok, fail}) : t("{service}: {ok} requested", {service: "Overseerr", ok}), ok ? "success" : "error")
   clearSelection()
 }
 
 async function batchAddToJellyseerr() {
-  if (!CONFIG?.JELLYSEERR?.JELLYSEERR_ENABLED) { toast("Jellyseerr not enabled", "error"); return }
+  if (!CONFIG?.JELLYSEERR?.JELLYSEERR_ENABLED) { toast(t("Jellyseerr not enabled"), "error"); return }
   let ok = 0, fail = 0
   for (const [tmdb] of _selected) {
     const res = await api("/api/jellyseerr/add", "POST", { tmdb })
     res.ok ? ok++ : fail++
   }
-  toast(`Jellyseerr: ${ok} requested${fail ? `, ${fail} failed` : ""}`, ok ? "success" : "error")
+  toast(fail ? t("{service}: {ok} requested, {fail} failed", {service: "Jellyseerr", ok, fail}) : t("{service}: {ok} requested", {service: "Jellyseerr", ok}), ok ? "success" : "error")
   clearSelection()
 }
 
 async function batchAddToSeerr() {
-  if (!CONFIG?.SEERR?.SEERR_ENABLED) { toast("Seerr not enabled", "error"); return }
+  if (!CONFIG?.SEERR?.SEERR_ENABLED) { toast(t("Seerr not enabled"), "error"); return }
   let ok = 0, fail = 0
   for (const [tmdb] of _selected) {
     const res = await api("/api/seerr/add", "POST", { tmdb })
     res.ok ? ok++ : fail++
   }
-  toast(`Seerr: ${ok} requested${fail ? `, ${fail} failed` : ""}`, ok ? "success" : "error")
+  toast(fail ? t("{service}: {ok} requested, {fail} failed", {service: "Seerr", ok, fail}) : t("{service}: {ok} requested", {service: "Seerr", ok}), ok ? "success" : "error")
   clearSelection()
 }
 
@@ -238,12 +238,12 @@ async function searchInRadarr(tmdb, title, btn) {
   btn.disabled = true; btn.textContent = "…"
   const res = await api("/api/radarr/search", "POST", { tmdb, title })
   if (res.ok) {
-    btn.textContent = "✓ Searching"
+    btn.textContent = t("✓ Searching")
     btn.style.color = "var(--green)"
-    toast(`${title} — search triggered in Radarr`, "success")
+    toast(t("{title} — search triggered in Radarr", {title}), "success")
   } else {
-    btn.textContent = "⟳ Search"; btn.disabled = false
-    toast(`Radarr search: ${res.error || "unknown error"}`, "error")
+    btn.textContent = t("⟳ Search"); btn.disabled = false
+    toast(t("Radarr search: {error}", {error: res.error || t("unknown error")}), "error")
   }
 }
 
@@ -295,7 +295,7 @@ async function addWishlist(tmdb, btn){
   btn.className   = "btn-sm btn-wishlisted"
   btn.textContent = "★"
   btn.onclick     = () => removeWishlist(tmdb, btn)
-  toast("Added to Wishlist","gold")
+  toast(t("Added to Wishlist"),"gold")
   // Reflect in DATA immediately so Wishlist tab shows the movie without rescan
   try {
     const m = JSON.parse(btn.dataset.movie || "{}")
@@ -313,7 +313,7 @@ async function removeWishlist(tmdb, btn){
   btn.className   = "btn-sm btn-wishlist"
   btn.textContent = "☆"
   btn.onclick     = () => addWishlist(tmdb, btn)
-  toast("Removed from Wishlist")
+  toast(t("Removed from Wishlist"))
   // Remove from DATA immediately
   DATA.wishlist = (DATA.wishlist || []).filter(w => w.tmdb !== tmdb)
   updateBadges()
@@ -325,7 +325,7 @@ async function ignoreMovie(tmdb, title, year, poster, btn) {
   btn.disabled = true
   const res = await api("/api/ignore", "POST", { kind: "movie", value: tmdb, title, year, poster })
   if (res.ok) {
-    toast(`"${title}" hidden — won't appear again`, "success")
+    toast(t("\"{title}\" hidden — won't appear again", {title}), "success")
     _purgeFromData(tmdb)   // keep DATA consistent so tab re-renders don't show it again
     const card = btn.closest(".pc")
     if (card) {
@@ -336,7 +336,7 @@ async function ignoreMovie(tmdb, title, year, poster, btn) {
     }
   } else {
     btn.disabled = false
-    toast(`Could not ignore: ${res.error || "unknown error"}`, "error")
+    toast(t("Could not ignore: {error}", {error: res.error || t("unknown error")}), "error")
   }
 }
 
@@ -344,7 +344,7 @@ async function unignoreMovie(tmdb, title, btn) {
   btn.disabled = true
   const res = await api("/api/unignore", "POST", { kind: "movie", value: tmdb })
   if (res.ok) {
-    toast(`"${title}" restored`, "success")
+    toast(t("\"{title}\" restored", {title}), "success")
     const card = document.getElementById(`ignored-${tmdb}`)
     if (card) {
       card.style.transition = "opacity .3s"
@@ -353,7 +353,7 @@ async function unignoreMovie(tmdb, title, btn) {
     }
   } else {
     btn.disabled = false
-    toast(`Could not restore: ${res.error || "unknown error"}`, "error")
+    toast(t("Could not restore: {error}", {error: res.error || t("unknown error")}), "error")
   }
 }
 
@@ -401,7 +401,7 @@ function _showRadarrPicker(tmdb, title, btn, instance, callback = null) {
   ).join("")
 
   const folderOpts = data.folders.map(f => {
-    const free = f.freeSpace ? ` (${Math.round(f.freeSpace/1073741824)}GB free)` : ""
+    const free = f.freeSpace ? ` (${t("{gb}GB free", {gb: Math.round(f.freeSpace/1073741824)})})` : ""
     return `<option value="${escHtml(f.path)}" ${f.path === cfgRoot ? "selected" : ""}>${escHtml(f.path)}${free}</option>`
   }).join("")
 
@@ -409,14 +409,14 @@ function _showRadarrPicker(tmdb, title, btn, instance, callback = null) {
     <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:12px;
                 padding:1.5rem;min-width:320px;max-width:480px;width:100%">
       <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:1rem">
-        Add to ${label}
+        ${escHtml(t("Add to {label}", {label}))}
         <span style="font-size:.72rem;font-weight:400;color:var(--text3);display:block;margin-top:.2rem">
           ${escHtml(title)}
         </span>
       </div>
       ${data.profiles.length > 1 ? `
       <div style="margin-bottom:.75rem">
-        <label style="font-size:.72rem;color:var(--text3);display:block;margin-bottom:.3rem">Quality Profile</label>
+        <label style="font-size:.72rem;color:var(--text3);display:block;margin-bottom:.3rem">${t("Quality Profile")}</label>
         <select id="rpQuality" style="width:100%;background:var(--bg3);border:1px solid var(--border2);
           border-radius:8px;color:var(--text);font-size:.8rem;padding:.4rem .6rem">
           ${profileOpts}
@@ -424,7 +424,7 @@ function _showRadarrPicker(tmdb, title, btn, instance, callback = null) {
       </div>` : `<input type="hidden" id="rpQuality" value="${cfgQ||""}">`}
       ${data.folders.length > 1 ? `
       <div style="margin-bottom:1rem">
-        <label style="font-size:.72rem;color:var(--text3);display:block;margin-bottom:.3rem">Root Folder</label>
+        <label style="font-size:.72rem;color:var(--text3);display:block;margin-bottom:.3rem">${t("Root Folder")}</label>
         <select id="rpFolder" style="width:100%;background:var(--bg3);border:1px solid var(--border2);
           border-radius:8px;color:var(--text);font-size:.8rem;padding:.4rem .6rem">
           ${folderOpts}
@@ -433,11 +433,11 @@ function _showRadarrPicker(tmdb, title, btn, instance, callback = null) {
       <div style="display:flex;gap:.5rem;justify-content:flex-end">
         <button id="rpCancel"
           style="padding:6px 16px;border-radius:7px;border:1px solid var(--border2);
-                 background:none;color:var(--text2);cursor:pointer;font-size:.78rem">Cancel</button>
+                 background:none;color:var(--text2);cursor:pointer;font-size:.78rem">${t("Cancel")}</button>
         <button id="rpConfirm"
           style="padding:6px 16px;border-radius:7px;border:1px solid #7B2FBE;
                  background:#7B2FBE;color:#fff;cursor:pointer;font-size:.78rem;font-weight:600">
-          Add to ${label}
+          ${escHtml(t("Add to {label}", {label}))}
         </button>
       </div>
     </div>`
@@ -468,13 +468,13 @@ async function _doAddToRadarr(tmdb, title, btn, instance, qualityProfileId, root
   const res = await api(`/api/radarr/add${inst}`, "POST", payload)
   const label = instance === "4k" ? "4K" : "Radarr"
   if (res.ok) {
-    btn.textContent = instance === "4k" ? "✓ In 4K" : "✓ In Radarr"
+    btn.textContent = instance === "4k" ? t("✓ In 4K") : t("✓ In Radarr")
     btn.className   = "btn-sm"
     btn.style.color = "var(--green)"
-    toast(`${title} sent to ${label}`, "success")
+    toast(t("{title} sent to {label}", {title, label}), "success")
   } else {
-    btn.textContent = "✗ Error"; btn.disabled = false
-    toast(`${label}: ${res.error || "unknown error"}`, "error")
+    btn.textContent = t("✗ Error"); btn.disabled = false
+    toast(`${label}: ${res.error || t("unknown error")}`, "error")
   }
 }
 
@@ -483,7 +483,7 @@ async function addToRadarr(tmdb, title, btn) {
   const data = await _getRadarrPickerData("primary")
   // Show picker only when there's a real choice to make
   if (data.profiles.length > 1 || data.folders.length > 1) {
-    btn.disabled = false; btn.textContent = "+ Radarr"
+    btn.disabled = false; btn.textContent = t("+ Radarr")
     _showRadarrPicker(tmdb, title, btn, "primary")
   } else {
     await _doAddToRadarr(tmdb, title, btn, "primary", null, null)
@@ -494,7 +494,7 @@ async function addToRadarr4k(tmdb, title, btn) {
   btn.disabled = true; btn.textContent = "…"
   const data = await _getRadarrPickerData("4k")
   if (data.profiles.length > 1 || data.folders.length > 1) {
-    btn.disabled = false; btn.textContent = "+ 4K"
+    btn.disabled = false; btn.textContent = t("+ 4K")
     _showRadarrPicker(tmdb, title, btn, "4k")
   } else {
     await _doAddToRadarr(tmdb, title, btn, "4k", null, null)
@@ -508,7 +508,7 @@ async function upgradeToRadarr4k(tmdb, title, btn) {
   btn.disabled = true; btn.textContent = "…"
   const data = await _getRadarrPickerData("4k")
   if (!data || (!data.profiles && !data.folders)) {
-    toast("Radarr 4K not reachable", "error")
+    toast(t("Radarr 4K not reachable"), "error")
     btn.disabled = false; btn.textContent = orig
     return
   }
@@ -523,12 +523,12 @@ async function upgradeToRadarr4k(tmdb, title, btn) {
       })
       if (res.ok) {
         toast(`${title} → Radarr 4K`, "success")
-        btn.textContent = "✓ Queued"
+        btn.textContent = t("✓ Queued")
         btn.disabled = true
         // Bust upgrade cache so refresh shows updated state
         api("/api/quality/refresh", "POST")
       } else {
-        toast(res.error || "Radarr 4K error", "error")
+        toast(res.error || t("Radarr 4K error"), "error")
         btn.disabled = false; btn.textContent = orig
       }
     })
@@ -536,11 +536,11 @@ async function upgradeToRadarr4k(tmdb, title, btn) {
     const res = await api("/api/radarr/add?instance=4k", "POST", { tmdb, title })
     if (res.ok) {
       toast(`${title} → Radarr 4K`, "success")
-      btn.textContent = "✓ Queued"
+      btn.textContent = t("✓ Queued")
       btn.disabled = true
       api("/api/quality/refresh", "POST")
     } else {
-      toast(res.error || "Radarr 4K error", "error")
+      toast(res.error || t("Radarr 4K error"), "error")
       btn.disabled = false; btn.textContent = orig
     }
   }
@@ -572,14 +572,14 @@ async function addToOverseerr(tmdb, title, btn){
   const res = await api("/api/overseerr/add","POST",{tmdb,title})
   if (res.ok){
     overseerrRequested.add(tmdb)
-    btn.textContent = "✓ Requested"
+    btn.textContent = t("✓ Requested")
     btn.className   = "btn-sm"
     btn.style.color = "var(--green)"
     btn.disabled    = true
     toast(`${title} → Overseerr`,"success")
   } else {
     btn.textContent = "✗"; btn.disabled = false
-    toast(`Overseerr: ${res.error||"unknown error"}`,"error")
+    toast(`Overseerr: ${res.error||t("unknown error")}`,"error")
   }
 }
 
@@ -588,14 +588,14 @@ async function addToJellyseerr(tmdb, title, btn){
   const res = await api("/api/jellyseerr/add","POST",{tmdb,title})
   if (res.ok){
     jellyseerrRequested.add(tmdb)
-    btn.textContent = "✓ Requested"
+    btn.textContent = t("✓ Requested")
     btn.className   = "btn-sm"
     btn.style.color = "var(--green)"
     btn.disabled    = true
     toast(`${title} → Jellyseerr`,"success")
   } else {
     btn.textContent = "✗"; btn.disabled = false
-    toast(`Jellyseerr: ${res.error||"unknown error"}`,"error")
+    toast(`Jellyseerr: ${res.error||t("unknown error")}`,"error")
   }
 }
 
@@ -604,14 +604,14 @@ async function addToSeerr(tmdb, title, btn){
   const res = await api("/api/seerr/add","POST",{tmdb,title})
   if (res.ok){
     seerrRequested.add(tmdb)
-    btn.textContent = "✓ Requested"
+    btn.textContent = t("✓ Requested")
     btn.className   = "btn-sm"
     btn.style.color = "var(--green)"
     btn.disabled    = true
     toast(`${title} → Seerr`,"success")
   } else {
     btn.textContent = "✗"; btn.disabled = false
-    toast(`Seerr: ${res.error||"unknown error"}`,"error")
+    toast(`Seerr: ${res.error||t("unknown error")}`,"error")
   }
 }
 
@@ -624,7 +624,7 @@ async function ignoreFranchise(name, btn){
   DATA.franchises = (DATA.franchises||[]).filter(f => f.name !== name)
   btn.closest(".mb-group").remove()
   updateFilterBar()
-  toast(`"${name}" ignored`,"info")
+  toast(t("\"{name}\" ignored", {name}),"info")
 }
 
 async function ignoreDirector(name, btn){
@@ -634,7 +634,7 @@ async function ignoreDirector(name, btn){
   DATA.directors = (DATA.directors||[]).filter(d=>d.name!==name)
   btn.closest(".mb-group").remove()
   updateFilterBar()
-  toast(`Director "${name}" ignored`)
+  toast(t("Director \"{name}\" ignored", {name}))
 }
 
 async function ignoreActor(name, btn){
@@ -644,7 +644,7 @@ async function ignoreActor(name, btn){
   DATA.actors = (DATA.actors||[]).filter(a=>a.name!==name)
   btn.closest(".mb-group").remove()
   updateFilterBar()
-  toast(`Actor "${name}" ignored`)
+  toast(t("Actor \"{name}\" ignored", {name}))
 }
 
 /* ── Unignore group actions ─────────────────────────────────── */
@@ -654,11 +654,11 @@ async function unignoreFranchise(name, btn) {
   const res = await api("/api/unignore", "POST", { kind: "franchise", value: name })
   if (res.ok) {
     DATA._ignored_franchises = (DATA._ignored_franchises||[]).filter(n=>n!==name)
-    toast(`"${name}" restored`, "success")
+    toast(t("\"{name}\" restored", {name}), "success")
     if (typeof renderIgnored === "function") renderIgnored()
   } else {
     btn.disabled = false
-    toast(`Could not restore: ${res.error||"unknown error"}`, "error")
+    toast(t("Could not restore: {error}", {error: res.error || t("unknown error")}), "error")
   }
 }
 
@@ -667,11 +667,11 @@ async function unignoreDirector(name, btn) {
   const res = await api("/api/unignore", "POST", { kind: "director", value: name })
   if (res.ok) {
     DATA._ignored_directors = (DATA._ignored_directors||[]).filter(n=>n!==name)
-    toast(`Director "${name}" restored`, "success")
+    toast(t("Director \"{name}\" restored", {name}), "success")
     if (typeof renderIgnored === "function") renderIgnored()
   } else {
     btn.disabled = false
-    toast(`Could not restore: ${res.error||"unknown error"}`, "error")
+    toast(t("Could not restore: {error}", {error: res.error || t("unknown error")}), "error")
   }
 }
 
@@ -680,11 +680,11 @@ async function unignoreActor(name, btn) {
   const res = await api("/api/unignore", "POST", { kind: "actor", value: name })
   if (res.ok) {
     DATA._ignored_actors = (DATA._ignored_actors||[]).filter(n=>n!==name)
-    toast(`Actor "${name}" restored`, "success")
+    toast(t("Actor \"{name}\" restored", {name}), "success")
     if (typeof renderIgnored === "function") renderIgnored()
   } else {
     btn.disabled = false
-    toast(`Could not restore: ${res.error||"unknown error"}`, "error")
+    toast(t("Could not restore: {error}", {error: res.error || t("unknown error")}), "error")
   }
 }
 
@@ -692,7 +692,7 @@ async function unignoreActor(name, btn) {
 
 async function addLbUrl(input) {
   const url = (input?.value || "").trim()
-  if (!url) { toast("Paste a Letterboxd URL first", "error"); return }
+  if (!url) { toast(t("Paste a Letterboxd URL first"), "error"); return }
 
   const btn = input?.nextElementSibling
   if (btn) { btn.disabled = true; btn.textContent = "…" }
@@ -701,19 +701,19 @@ async function addLbUrl(input) {
     const res = await api("/api/letterboxd/urls", "POST", { url })
     if (res.ok) {
       input.value = ""
-      if (btn) { btn.disabled = false; btn.textContent = "+ Add" }
-      toast("List added — fetching in background…", "gold")
+      if (btn) { btn.disabled = false; btn.textContent = t("+ Add") }
+      toast(t("List added — fetching in background…"), "gold")
       // Re-render immediately (shows new URL in list, cached movies stay)
       await renderLetterboxd()
       // Explicitly trigger a refresh — adding a URL never auto-starts one
       await triggerLbRefresh()
     } else {
-      toast(res.error || "Failed to add URL", "error")
-      if (btn) { btn.disabled = false; btn.textContent = "+ Add" }
+      toast(res.error || t("Failed to add URL"), "error")
+      if (btn) { btn.disabled = false; btn.textContent = t("+ Add") }
     }
   } catch(e) {
-    toast("Failed to add URL", "error")
-    if (btn) { btn.disabled = false; btn.textContent = "+ Add" }
+    toast(t("Failed to add URL"), "error")
+    if (btn) { btn.disabled = false; btn.textContent = t("+ Add") }
   }
 }
 
@@ -722,12 +722,12 @@ async function removeLbUrl(url, btn) {
   try {
     await api("/api/letterboxd/urls/remove", "POST", { url })
     btn.disabled = false
-    toast("List removed", "gold")
+    toast(t("List removed"), "gold")
     // Re-render immediately (URL gone from list, movies still cached)
     await renderLetterboxd()
     _startLbPoll()
   } catch(e) {
-    toast(`Failed to remove: ${e?.message || "unknown error"}`, "error")
+    toast(t("Failed to remove: {error}", {error: e?.message || t("unknown error")}), "error")
     btn.disabled = false
   }
 }
@@ -735,10 +735,10 @@ async function removeLbUrl(url, btn) {
 async function triggerLbRefresh() {
   try {
     await api("/api/letterboxd/refresh", "POST", {})
-    toast("Refreshing Letterboxd lists…", "gold")
+    toast(t("Refreshing Letterboxd lists…"), "gold")
     _startLbPoll()
     await renderLetterboxd()   // re-render to show "↻ Refreshing…" badge
   } catch(e) {
-    toast("Refresh failed", "error")
+    toast(t("Refresh failed"), "error")
   }
 }

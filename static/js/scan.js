@@ -17,10 +17,10 @@ async function loadStatus(){
 }
 
 async function loadResults(){
-  setStatus("Loading…")
+  setStatus(t("Loading…"))
   const data = await api("/api/results")
   if (data.scanning){
-    setStatus("Scan in progress…")
+    setStatus(t("Scan in progress…"))
     DATA = data
     updateBadges()
     render()          // renders available sections; pending ones show skeletons
@@ -28,7 +28,7 @@ async function loadResults(){
     return
   }
   DATA = data
-  setStatus(`Updated ${fmtDate(DATA.generated_at)}`)
+  setStatus(t("Updated {date}", {date: fmtDate(DATA.generated_at)}))
   updateBadges()
   render()
 }
@@ -50,13 +50,13 @@ function updateBadges(){
 async function rescan(){
   if (!CONFIGURED){
     const msg = SETUP_ISSUES.length
-      ? "Setup incomplete: " + SETUP_ISSUES[0]
-      : "Complete setup first."
+      ? t("Setup incomplete: {issue}", {issue: SETUP_ISSUES[0]})
+      : t("Complete setup first.")
     toast(msg, "error")
     return
   }
   const res = await api("/api/scan","POST")
-  if (!res.ok){ toast(res.error || "Could not start scan","error"); return }
+  if (!res.ok){ toast(res.error || t("Could not start scan"),"error"); return }
   startPolling()
 }
 
@@ -88,15 +88,15 @@ async function pollScanStatus(){
   }
   stopPolling()
   document.getElementById("scanProgress")?.remove()
-  if (s.error){ toast(`Scan failed: ${s.error}`,"error"); return }
+  if (s.error){ toast(t("Scan failed: {error}", {error: s.error}),"error"); return }
   const data = await api("/api/results")
   DATA = data
-  const dur = s.last_duration ? ` · took ${fmtDuration(s.last_duration)}` : ""
-  setStatus(`Updated ${fmtDate(DATA.generated_at)}${dur}`)
+  const dur = s.last_duration ? t(" · took {duration}", {duration: fmtDuration(s.last_duration)}) : ""
+  setStatus(t("Updated {date}", {date: fmtDate(DATA.generated_at)}) + dur)
   const durEl = document.getElementById("last-duration")
-  if (durEl && s.last_duration) durEl.textContent = `Last scan took ${fmtDuration(s.last_duration)}`
+  if (durEl && s.last_duration) durEl.textContent = t("Last scan took {duration}", {duration: fmtDuration(s.last_duration)})
   updateBadges()
-  toast("Scan complete","success")
+  toast(t("Scan complete"),"success")
   if (ACTIVE_TAB === "logs") renderLogs()
   else render()
 }
@@ -110,7 +110,7 @@ function renderScanProgress(s){
   if (!s || !s.running){
     el.innerHTML = `<div style="display:flex;align-items:center;gap:.6rem;color:var(--text2);font-size:.78rem">
       <div style="width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>
-      Starting scan…
+      ${t("Starting scan…")}
     </div>
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`
     return
@@ -119,7 +119,7 @@ function renderScanProgress(s){
   el.innerHTML = `
   <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
   <div style="display:flex;justify-content:space-between;margin-bottom:.5rem">
-    <span style="font-size:.72rem;font-family:'Syne',sans-serif;font-weight:700;color:var(--text)">Scanning…</span>
+    <span style="font-size:.72rem;font-family:'Syne',sans-serif;font-weight:700;color:var(--text)">${t("Scanning…")}</span>
     <span style="font-size:.68rem;color:var(--text3)">${s.step_index}/${s.step_total}</span>
   </div>
   <div style="height:3px;background:var(--border);border-radius:3px;margin-bottom:.6rem;overflow:hidden">
@@ -128,7 +128,8 @@ function renderScanProgress(s){
   <div style="font-size:.7rem;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
     ${s.step||""}${s.detail?` — ${s.detail}`:""}
   </div>`
-  setStatus(`${s.step||"Scanning…"} (${pct}%)`)
+  // s.step comes from the backend (app/scanner.py STEPS, already translated there via tr())
+  setStatus(`${s.step||t("Scanning…")} (${pct}%)`)
 }
 
 function renderSkeleton(){

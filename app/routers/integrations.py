@@ -19,6 +19,7 @@ import requests
 from fastapi import APIRouter, Body, Header, Query
 
 from app.config import load_config
+from app.i18n import tr
 from app.scanner import build_async, scan_state
 from app.routers._shared import log, _parse_tmdb_id
 
@@ -47,7 +48,7 @@ def _radarr_post(
     search    = bool(cfg_section.get(f"{prefix}_SEARCH_ON_ADD", False))
 
     if not url:
-        return {"ok": False, "error": "Radarr URL not configured"}
+        return {"ok": False, "error": tr("Radarr URL not configured")}
 
     body = {
         "title":            title,
@@ -100,11 +101,11 @@ def radarr_profiles(instance: str = Query(default="primary")):
         key = str(section.get("RADARR_API_KEY", "")).strip()
 
     if not url or not key:
-        return {"ok": False, "error": "URL and API key required"}
+        return {"ok": False, "error": tr("URL and API key required")}
 
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
-        return {"ok": False, "error": "Invalid Radarr URL"}
+        return {"ok": False, "error": tr("Invalid Radarr URL")}
 
     try:
         r = requests.get(
@@ -116,7 +117,7 @@ def radarr_profiles(instance: str = Query(default="primary")):
         return {"ok": False, "error": str(e)}
 
     if r.status_code == 401:
-        return {"ok": False, "error": "Invalid API key"}
+        return {"ok": False, "error": tr("Invalid API key")}
     if r.status_code != 200:
         return {"ok": False, "error": f"HTTP {r.status_code}"}
 
@@ -138,11 +139,11 @@ def radarr_rootfolders(instance: str = Query(default="primary")):
         key = str(section.get("RADARR_API_KEY", "")).strip()
 
     if not url or not key:
-        return {"ok": False, "error": "URL and API key required"}
+        return {"ok": False, "error": tr("URL and API key required")}
 
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
-        return {"ok": False, "error": "Invalid Radarr URL"}
+        return {"ok": False, "error": tr("Invalid Radarr URL")}
 
     try:
         r = requests.get(
@@ -154,7 +155,7 @@ def radarr_rootfolders(instance: str = Query(default="primary")):
         return {"ok": False, "error": str(e)}
 
     if r.status_code == 401:
-        return {"ok": False, "error": "Invalid API key"}
+        return {"ok": False, "error": tr("Invalid API key")}
     if r.status_code != 200:
         return {"ok": False, "error": f"HTTP {r.status_code}"}
 
@@ -166,7 +167,7 @@ def radarr_rootfolders(instance: str = Query(default="primary")):
 def radarr_add(payload: dict = Body(...), instance: str = Query(default="primary")):
     tmdb_id = _parse_tmdb_id(payload.get("tmdb"))
     if tmdb_id is None:
-        return {"ok": False, "error": "Invalid TMDB ID"}
+        return {"ok": False, "error": tr("Invalid TMDB ID")}
     title            = str(payload.get("title", ""))
     quality_override = payload.get("qualityProfileId")
     root_override    = payload.get("rootFolderPath")
@@ -181,12 +182,12 @@ def radarr_add(payload: dict = Body(...), instance: str = Query(default="primary
     if instance == "4k":
         section = cfg.get("RADARR_4K", {})
         if not section.get("RADARR_4K_ENABLED"):
-            return {"ok": False, "error": "Radarr 4K disabled"}
+            return {"ok": False, "error": tr("Radarr 4K disabled")}
         return _radarr_post(section, "RADARR_4K", tmdb_id, title, quality_override, root_override)
 
     section = cfg.get("RADARR", {})
     if not section.get("RADARR_ENABLED"):
-        return {"ok": False, "error": "Radarr disabled"}
+        return {"ok": False, "error": tr("Radarr disabled")}
     result = _radarr_post(section, "RADARR", tmdb_id, title, quality_override, root_override)
     if result.get("ok"):
         _invalidate_radarr_library_cache()
@@ -231,11 +232,11 @@ def radarr_search(payload: dict = Body(...)):
     cfg    = load_config()
     radarr = cfg.get("RADARR", {})
     if not radarr.get("RADARR_ENABLED"):
-        return {"ok": False, "error": "Radarr not enabled"}
+        return {"ok": False, "error": tr("Radarr not enabled")}
 
     tmdb_id = _parse_tmdb_id(payload.get("tmdb"))
     if tmdb_id is None:
-        return {"ok": False, "error": "Invalid TMDB ID"}
+        return {"ok": False, "error": tr("Invalid TMDB ID")}
 
     url = str(radarr.get("RADARR_URL", "")).rstrip("/")
     key = str(radarr.get("RADARR_API_KEY", "")).strip()
@@ -249,7 +250,7 @@ def radarr_search(payload: dict = Body(...)):
         )
         movies = r.json() if r.status_code == 200 else []
         if not movies:
-            return {"ok": False, "error": "Movie not found in Radarr"}
+            return {"ok": False, "error": tr("Movie not found in Radarr")}
         radarr_id = movies[0]["id"]
 
         # Kick off a search
@@ -275,7 +276,7 @@ def radarr_status():
     cfg    = load_config()
     radarr = cfg.get("RADARR", {})
     if not radarr.get("RADARR_ENABLED"):
-        return {"ok": False, "error": "Radarr disabled"}
+        return {"ok": False, "error": tr("Radarr disabled")}
 
     now = time.time()
     if _radarr_status_cache["data"] and now - _radarr_status_cache["ts"] < 60:
@@ -284,7 +285,7 @@ def radarr_status():
     url = radarr.get("RADARR_URL", "").rstrip("/")
     key = radarr.get("RADARR_API_KEY", "")
     if not url or not key:
-        return {"ok": False, "error": "Radarr not configured"}
+        return {"ok": False, "error": tr("Radarr not configured")}
 
     try:
         r = requests.get(
@@ -296,7 +297,7 @@ def radarr_status():
         movies = r.json()
     except Exception as e:
         log.debug(f"Radarr status fetch failed: {e}")
-        return {"ok": False, "error": "Could not reach Radarr"}
+        return {"ok": False, "error": tr("Could not reach Radarr")}
 
     statuses: dict[int, str] = {}
     for m in movies:
@@ -324,13 +325,13 @@ def radarr_status():
 def overseerr_add(payload: dict = Body(...)):
     cfg = load_config().get("OVERSEERR", {})
     if not cfg.get("OVERSEERR_ENABLED"):
-        return {"ok": False, "error": "Overseerr disabled"}
+        return {"ok": False, "error": tr("Overseerr disabled")}
     tmdb_id = _parse_tmdb_id(payload.get("tmdb"))
     if tmdb_id is None:
-        return {"ok": False, "error": "Invalid TMDB ID"}
+        return {"ok": False, "error": tr("Invalid TMDB ID")}
     api_key = cfg.get("OVERSEERR_API_KEY", "").strip()
     if not api_key:
-        return {"ok": False, "error": "Overseerr API key not configured"}
+        return {"ok": False, "error": tr("Overseerr API key not configured")}
     headers = {"X-Api-Key": api_key, "Content-Type": "application/json"}
     try:
         r = requests.post(
@@ -353,13 +354,13 @@ def overseerr_add(payload: dict = Body(...)):
 def jellyseerr_add(payload: dict = Body(...)):
     cfg = load_config().get("JELLYSEERR", {})
     if not cfg.get("JELLYSEERR_ENABLED"):
-        return {"ok": False, "error": "Jellyseerr disabled"}
+        return {"ok": False, "error": tr("Jellyseerr disabled")}
     tmdb_id = _parse_tmdb_id(payload.get("tmdb"))
     if tmdb_id is None:
-        return {"ok": False, "error": "Invalid TMDB ID"}
+        return {"ok": False, "error": tr("Invalid TMDB ID")}
     api_key = cfg.get("JELLYSEERR_API_KEY", "").strip()
     if not api_key:
-        return {"ok": False, "error": "Jellyseerr API key not configured"}
+        return {"ok": False, "error": tr("Jellyseerr API key not configured")}
     headers = {"X-Api-Key": api_key, "Content-Type": "application/json"}
     try:
         r = requests.post(
@@ -382,13 +383,13 @@ def jellyseerr_add(payload: dict = Body(...)):
 def seerr_add(payload: dict = Body(...)):
     cfg = load_config().get("SEERR", {})
     if not cfg.get("SEERR_ENABLED"):
-        return {"ok": False, "error": "Seerr disabled"}
+        return {"ok": False, "error": tr("Seerr disabled")}
     tmdb_id = _parse_tmdb_id(payload.get("tmdb"))
     if tmdb_id is None:
-        return {"ok": False, "error": "Invalid TMDB ID"}
+        return {"ok": False, "error": tr("Invalid TMDB ID")}
     api_key = cfg.get("SEERR_API_KEY", "").strip()
     if not api_key:
-        return {"ok": False, "error": "Seerr API key not configured"}
+        return {"ok": False, "error": tr("Seerr API key not configured")}
     headers = {"X-Api-Key": api_key, "Content-Type": "application/json"}
     try:
         r = requests.post(
@@ -443,17 +444,17 @@ def api_webhook(
 def api_watchtower_update():
     cfg = load_config().get("WATCHTOWER", {})
     if not cfg.get("WATCHTOWER_ENABLED"):
-        return {"ok": False, "error": "Watchtower disabled"}
+        return {"ok": False, "error": tr("Watchtower disabled")}
 
     url   = str(cfg.get("WATCHTOWER_URL", "")).rstrip("/")
     token = str(cfg.get("WATCHTOWER_API_TOKEN", "")).strip()
 
     if not url:
-        return {"ok": False, "error": "Watchtower URL not configured"}
+        return {"ok": False, "error": tr("Watchtower URL not configured")}
 
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
-        return {"ok": False, "error": "Invalid Watchtower URL scheme"}
+        return {"ok": False, "error": tr("Invalid Watchtower URL scheme")}
 
     headers = {"Authorization": f"Bearer {token}"} if token else {}
 
@@ -467,4 +468,4 @@ def api_watchtower_update():
     import threading
     threading.Thread(target=_fire, daemon=True).start()
     log.info("Watchtower update dispatched (fire-and-forget)")
-    return {"ok": True, "message": "Update request sent — container will restart shortly"}
+    return {"ok": True, "message": tr("Update request sent — container will restart shortly")}

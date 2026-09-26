@@ -9,6 +9,7 @@ from fastapi import APIRouter
 
 from app.config import load_config
 from app.tmdb import TMDB
+from app.i18n import tmdb_language, tr
 from app.scanner import load_snapshot
 
 router = APIRouter()
@@ -21,15 +22,19 @@ _CACHE_TTL = 4 * 3600  # 4 hours
 @router.get("/api/theaters")
 def get_theaters():
     now = time.time()
-    if _cache["data"] and now - _cache["ts"] < _CACHE_TTL:
+    cfg      = load_config()
+    language = tmdb_language(cfg)
+    # Region follows the TMDB language ("de-DE" → German release dates), en-US → US as before
+    region   = language.split("-")[1].upper() if "-" in language else "US"
+    if (_cache["data"] and now - _cache["ts"] < _CACHE_TTL
+            and _cache.get("language") == language):
         return _cache["data"]
 
-    cfg     = load_config()
     api_key = cfg.get("TMDB", {}).get("TMDB_API_KEY", "")
     if not api_key:
-        return {"ok": False, "error": "TMDB API key not configured", "movies": []}
+        return {"ok": False, "error": tr("TMDB API key not configured"), "movies": []}
 
-    tmdb     = TMDB(api_key)
+    tmdb     = TMDB(api_key, language=language)
     owned    = load_snapshot()          # set of int TMDB IDs
 
     movies: dict[int, dict] = {}
@@ -38,7 +43,7 @@ def get_theaters():
         for page in (1, 2):
             data = tmdb.get(
                 f"https://api.themoviedb.org/3/movie/{endpoint}"
-                f"?api_key={api_key}&page={page}&language=en-US&region=US"
+                f"?api_key={api_key}&page={page}&region={region}"
             ) or {}
             for m in data.get("results", []):
                 mid = int(m.get("id") or 0)
@@ -68,5 +73,6 @@ def get_theaters():
     result = {"ok": True, "movies": sorted_movies, "count": len(sorted_movies)}
     _cache["data"] = result
     _cache["ts"]   = now
+    _cache["language"] = language
     log.info(f"Theaters: {len(sorted_movies)} films (owned={len(owned)} filtered out)")
     return result

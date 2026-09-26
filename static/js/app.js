@@ -9,22 +9,22 @@ let CONFIGURED = false
 let ACTIVE_TAB = "dashboard"
 
 const PAGE_TITLES = {
-  dashboard:   "Dashboard",
-  franchises:  "Franchises",
-  directors:   "Directors",
-  actors:      "Actors",
-  classics:    "Classics",
-  suggestions: "Suggestions",
-  notmdb:      "No TMDB GUID",
-  nomatch:     "TMDB No Match",
-  duplicates:  "Multi-Version",
-  wishlist:    "Wishlist",
-  theaters:    "In Theaters",
-  upgrades:    "Quality Upgrades",
-  letterboxd:  "Lists",
-  ignored:     "Ignored",
-  config:      "Configuration",
-  logs:        "Logs",
+  dashboard:   t("Dashboard"),
+  franchises:  t("Franchises"),
+  directors:   t("Directors"),
+  actors:      t("Actors"),
+  classics:    t("Classics"),
+  suggestions: t("Suggestions"),
+  notmdb:      t("No TMDB GUID"),
+  nomatch:     t("TMDB No Match"),
+  duplicates:  t("Multi-Version"),
+  wishlist:    t("Wishlist"),
+  theaters:    t("In Theaters"),
+  upgrades:    t("Quality Upgrades"),
+  letterboxd:  t("Lists"),
+  ignored:     t("Ignored"),
+  config:      t("Configuration"),
+  logs:        t("Logs"),
 }
 
 const TAB_KEYS = {
@@ -253,7 +253,7 @@ function handleGsBgClick(e) {
 async function _gsSearch(q) {
   if (!q || q.length < 2) {
     document.getElementById("gsResults").innerHTML =
-      `<div id="gsEmpty">Type to search across all tabs…</div>`
+      `<div id="gsEmpty">${t("Type to search across all tabs…")}</div>`
     return
   }
   try {
@@ -264,14 +264,14 @@ async function _gsSearch(q) {
 }
 
 const TAB_LABELS = {
-  franchises:"Franchise", directors:"Director", actors:"Actor",
-  classics:"Classic", suggestions:"Suggestion", wishlist:"Wishlist"
+  franchises:t("Franchise"), directors:t("Director"), actors:t("Actor"),
+  classics:t("Classic"), suggestions:t("Suggestion"), wishlist:t("Wishlist")
 }
 
 function _renderGsResults() {
   const box = document.getElementById("gsResults")
   if (!_gsResults.length) {
-    box.innerHTML = `<div id="gsEmpty">No results found.</div>`
+    box.innerHTML = `<div id="gsEmpty">${t("No results found.")}</div>`
     return
   }
   box.innerHTML = _gsResults.map((m, i) => `
@@ -336,6 +336,7 @@ function isShortcutsOpen(){ return document.getElementById("shortcutsModal")?.cl
 ============================================================ */
 
 async function boot(){
+  translateDom(document.body)   // static HTML shell → UI language, before anything renders
   applyStoredTheme()
   applyStoredDyslexicFont()
   restoreState()
@@ -350,8 +351,8 @@ async function boot(){
       const banner = document.getElementById("update-banner")
       if (banner) {
         banner.innerHTML =
-          `⬆ v${v.latest} available — <a href="${v.release_url}" target="_blank" rel="noopener"
-            style="color:var(--gold);text-decoration:underline">Release notes</a>`
+          `${t("⬆ v{version} available", {version: v.latest})} — <a href="${v.release_url}" target="_blank" rel="noopener"
+            style="color:var(--gold);text-decoration:underline">${t("Release notes")}</a>`
         banner.style.display = "block"
       }
     }
@@ -373,7 +374,7 @@ async function boot(){
     _fetchTraktWatched().then(() => {
       if (ACTIVE_TAB && !["config","logs"].includes(ACTIVE_TAB)) render()
     })
-  } else { setStatus("Setup required"); render() }
+  } else { setStatus(t("Setup required")); render() }
 }
 
 async function logout() {

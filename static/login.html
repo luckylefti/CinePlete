@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="__LANG__">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -190,7 +190,12 @@
     <div id="error"></div>
   </div>
 
+  <script src="/static/js/i18n.js?v=__VERSION__"></script>
+  <script src="/static/js/i18n.de.js?v=__VERSION__"></script>
   <script>
+    translateDom(document.body)
+    document.title = t("Cineplete · Login")
+
     // Auto-submit on Enter key
     document.addEventListener("keydown", e => {
       if (e.key === "Enter") doLogin()
@@ -204,12 +209,12 @@
       const err         = document.getElementById("error")
 
       if (!username || !password) {
-        showError("Please enter username and password")
+        showError(t("Please enter username and password"))
         return
       }
 
       btn.disabled   = true
-      btn.textContent = "Signing in…"
+      btn.textContent = t("Signing in…")
       err.style.display = "none"
 
       try {
@@ -227,14 +232,14 @@
           const isSafeRedirect = nextUrl.startsWith("/") && !nextUrl.startsWith("//")
           window.location.href = isSafeRedirect ? nextUrl : "/"
         } else {
-          showError(data.error || "Login failed")
+          showError(data.error || t("Login failed"))
           btn.disabled    = false
-          btn.textContent = "Sign in"
+          btn.textContent = t("Sign in")
         }
       } catch(e) {
-        showError("Network error — is the server running?")
+        showError(t("Network error — is the server running?"))
         btn.disabled    = false
-        btn.textContent = "Sign in"
+        btn.textContent = t("Sign in")
       }
     }
 

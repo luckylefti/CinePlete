@@ -14,7 +14,7 @@ function _renderSectionPending(label) {
     <div class="skeleton-grid">
       ${Array(6).fill('<div class="skeleton-card"></div>').join("")}
     </div>
-    <p class="section-pending-label">⏳ ${label} — waiting to start…</p>
+    <p class="section-pending-label">⏳ ${t("{label} — waiting to start…", {label})}</p>
   </div>`
 }
 
@@ -64,7 +64,7 @@ function _paginate(list, tab) {
         <button onclick="_loadMore('${safeTab}')"
           style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);
                  border-radius:8px;padding:.5rem 1.5rem;cursor:pointer;font-family:'DM Mono',monospace;
-                 font-size:.75rem">Load ${Math.min(rem,PAGE_SIZE)} more (${rem} remaining)</button>
+                 font-size:.75rem">${t("Load {count} more ({rem} remaining)", {count: Math.min(rem,PAGE_SIZE), rem})}</button>
       </div>`
     : ""
   return { slice, btn }
@@ -120,6 +120,9 @@ function renderDashboard(){
   ;(DATA.classics ||[]).forEach(pushUniq)
 
   // Missing by decade
+  // Keys are internal (decadeToYear below); only the chart labels are translated
+  const decadeLabel={"Pre-1970":t("Pre-1970"),"1970s":t("1970s"),"1980s":t("1980s"),"1990s":t("1990s"),
+                     "2000s":t("2000s"),"2010s":t("2010s"),"2020s":t("2020s")}
   const decades={"Pre-1970":0,"1970s":0,"1980s":0,"1990s":0,"2000s":0,"2010s":0,"2020s":0}
   allMissing.forEach(m=>{
     const yr=parseInt(m.year||0)
@@ -140,7 +143,7 @@ function renderDashboard(){
   }))
   const topGenres=Object.entries(genreCounts)
     .sort((a,b)=>b[1]-a[1]).slice(0,8)
-    .map(([id,n])=>({id, name:GENRE_MAP[id], count:n}))
+    .map(([id,n])=>({id, name:genreLabel(id), count:n}))
 
   // Top incomplete franchises (by absolute missing count)
   const topIncomplete=activeFranchises
@@ -178,45 +181,45 @@ function renderDashboard(){
   c.innerHTML=`
   <!-- KPI Strip -->
   <div class="kpi-strip">
-    ${kpi(Math.round(s.franchise_completion_pct??0)+"%","Franchise","#F5C518","franchises",`${fComplete} complete · ${fOne+fMore} gaps`)}
-    ${kpi(Math.round(s.directors_proxy_pct??0)+"%","Directors","#3b82f6","directors",`${(DATA.directors||[]).length} tracked`)}
-    ${kpi(Math.round(s.classics_proxy_pct??0)+"%","Classics","#a855f7","classics",classicsHave===null?"All done! 🎉":`${classicsHave}/${classicsTotal} in library`)}
-    ${kpi(Math.round(s.global_cinema_score??0)+"%","Global Score","#22c55e","","composite")}
-    ${kpi(totalMissing,"Total Missing","var(--text)","franchises","unique films")}
-    ${kpi((DATA.wishlist||[]).length,"Wishlist","var(--gold)","wishlist","saved for later")}
+    ${kpi(Math.round(s.franchise_completion_pct??0)+"%",t("Franchise"),"#F5C518","franchises",t("{complete} complete · {gaps} gaps", {complete: fComplete, gaps: fOne+fMore}))}
+    ${kpi(Math.round(s.directors_proxy_pct??0)+"%",t("Directors"),"#3b82f6","directors",t("{n} tracked", {n: (DATA.directors||[]).length}))}
+    ${kpi(Math.round(s.classics_proxy_pct??0)+"%",t("Classics"),"#a855f7","classics",classicsHave===null?t("All done! 🎉"):t("{have}/{total} in library", {have: classicsHave, total: classicsTotal}))}
+    ${kpi(Math.round(s.global_cinema_score??0)+"%",t("Global Score"),"#22c55e","",t("composite"))}
+    ${kpi(totalMissing,t("Total Missing"),"var(--text)","franchises",t("unique films"))}
+    ${kpi((DATA.wishlist||[]).length,t("Wishlist"),"var(--gold)","wishlist",t("saved for later"))}
   </div>
 
   <!-- Doughnuts row -->
   <div class="db-row" style="margin-bottom:.75rem">
     <div class="card card-compact">
-      <div class="card-title">Franchise Status</div>
+      <div class="card-title">${t("Franchise Status")}</div>
       <div class="chart-duo">
         <div class="chart-donut-wrap"><canvas id="cFranchise"></canvas></div>
         <div class="legend-stack">
-          ${leg("#22c55e","Complete",fComplete,"franchises")}
-          ${leg("#F5C518","Missing 1",fOne,"franchises")}
-          ${leg("#ef4444","Missing 2+",fMore,"franchises")}
+          ${leg("#22c55e",t("Complete"),fComplete,"franchises")}
+          ${leg("#F5C518",t("Missing 1"),fOne,"franchises")}
+          ${leg("#ef4444",t("Missing 2+"),fMore,"franchises")}
         </div>
       </div>
     </div>
     <div class="card card-compact">
-      <div class="card-title">Classics Coverage</div>
+      <div class="card-title">${t("Classics Coverage")}</div>
       <div class="chart-duo">
         <div class="chart-donut-wrap"><canvas id="cClassics"></canvas></div>
         <div class="legend-stack">
-          ${leg("#a855f7","In Library",classicsHave??classicsTotal,"classics")}
-          ${leg("#27272a","Missing",classicsMiss,"classics")}
+          ${leg("#a855f7",t("In Library"),classicsHave??classicsTotal,"classics")}
+          ${leg("#27272a",t("Missing"),classicsMiss,"classics")}
         </div>
       </div>
     </div>
     <div class="card card-compact">
-      <div class="card-title">Metadata Health</div>
+      <div class="card-title">${t("Metadata Health")}</div>
       <div class="chart-duo">
         <div class="chart-donut-wrap"><canvas id="cMeta"></canvas></div>
         <div class="legend-stack">
-          ${leg("#22c55e","Valid TMDB",okMovies)}
-          ${leg("#F5C518","No GUID",noGuid,"notmdb")}
-          ${leg("#ef4444","No Match",noMatch,"nomatch")}
+          ${leg("#22c55e",t("Valid TMDB"),okMovies)}
+          ${leg("#F5C518",t("No GUID"),noGuid,"notmdb")}
+          ${leg("#ef4444",t("No Match"),noMatch,"nomatch")}
         </div>
       </div>
     </div>
@@ -225,11 +228,11 @@ function renderDashboard(){
   <!-- Analysis row: decade + genre gap -->
   <div class="db-row db-row-2" style="margin-bottom:.75rem">
     <div class="card card-compact">
-      <div class="card-title">Missing by Decade</div>
+      <div class="card-title">${t("Missing by Decade")}</div>
       <canvas id="cDecade" height="150"></canvas>
     </div>
     <div class="card card-compact">
-      <div class="card-title">Genre Gap — Top Missing</div>
+      <div class="card-title">${t("Genre Gap — Top Missing")}</div>
       <canvas id="cGenre" height="150"></canvas>
     </div>
   </div>
@@ -237,11 +240,11 @@ function renderDashboard(){
   <!-- Bottom row: actors + franchise bars + library stats -->
   <div class="db-row">
     <div class="card card-compact">
-      <div class="card-title">Top Actors in Library</div>
+      <div class="card-title">${t("Top Actors in Library")}</div>
       <canvas id="cActors" height="200"></canvas>
     </div>
     <div class="card card-compact">
-      <div class="card-title">Most Incomplete Franchises</div>
+      <div class="card-title">${t("Most Incomplete Franchises")}</div>
       <div class="franchise-bars">
         ${topIncomplete.map(f=>{
           const pct=f.total?Math.round((f.have/f.total)*100):100
@@ -253,22 +256,22 @@ function renderDashboard(){
             </div>
             <div class="fbr-track"><div class="fbr-fill" style="width:0%" data-pct="${pct}"></div></div>
           </div>`
-        }).join("")||`<div style="color:var(--text3);font-size:.8rem;padding:.5rem 0">All franchises complete 🎉</div>`}
+        }).join("")||`<div style="color:var(--text3);font-size:.8rem;padding:.5rem 0">${t("All franchises complete 🎉")}</div>`}
       </div>
     </div>
     <div class="card card-compact">
-      <div class="card-title">Library Stats</div>
+      <div class="card-title">${t("Library Stats")}</div>
       <div>
-        ${srow("Scanned",     p.scanned_items??0)}
-        ${srow("Indexed",     p.indexed_tmdb ??0)}
-        ${srow("Shorts skip", p.skipped_short??0)}
-        ${srow("No GUID",     noGuid,  noGuid ?"var(--amber)":"")}
-        ${srow("No match",    noMatch, noMatch?"var(--red)":"")}
-        ${srow("Franchises",  activeFranchises.length)}
-        ${srow("Directors",   (DATA.directors||[]).length)}
-        ${srow("Suggestions", (DATA.suggestions||[]).length)}
+        ${srow(t("Scanned"),     p.scanned_items??0)}
+        ${srow(t("Indexed"),     p.indexed_tmdb ??0)}
+        ${srow(t("Shorts skip"), p.skipped_short??0)}
+        ${srow(t("No GUID"),     noGuid,  noGuid ?"var(--amber)":"")}
+        ${srow(t("No match"),    noMatch, noMatch?"var(--red)":"")}
+        ${srow(t("Franchises"),  activeFranchises.length)}
+        ${srow(t("Directors"),   (DATA.directors||[]).length)}
+        ${srow(t("Suggestions"), (DATA.suggestions||[]).length)}
       </div>
-      <div class="card-title" style="margin-top:1rem">Director Coverage</div>
+      <div class="card-title" style="margin-top:1rem">${t("Director Coverage")}</div>
       <canvas id="cDirs" height="75"></canvas>
     </div>
   </div>`
@@ -295,16 +298,16 @@ function renderDashboard(){
     })
 
     mkChart("cFranchise",doughnut(
-      ["Complete","Missing 1","Missing 2+"],[fComplete,fOne,fMore],
+      [t("Complete"),t("Missing 1"),t("Missing 2+")],[fComplete,fOne,fMore],
       ["#22c55e","#F5C518","#ef4444"],i=>{ if(i>0) setActiveTab("franchises") }
     ))
     mkChart("cClassics",doughnut(
-      ["In Library","Missing"],
+      [t("In Library"),t("Missing")],
       classicsHave===null ? [1,0] : [classicsHave,classicsMiss],
       ["#a855f7","#27272a"],i=>{ if(i===1) setActiveTab("classics") }
     ))
     mkChart("cMeta",doughnut(
-      ["Valid TMDB","No GUID","No Match"],[okMovies,noGuid,noMatch],
+      [t("Valid TMDB"),t("No GUID"),t("No Match")],[okMovies,noGuid,noMatch],
       ["#22c55e","#F5C518","#ef4444"],i=>{ if(i===1) setActiveTab("notmdb"); else if(i===2) setActiveTab("nomatch") }
     ))
 
@@ -313,7 +316,7 @@ function renderDashboard(){
     const dLabels=Object.keys(decades).filter(k=>decades[k]>0)
     mkChart("cDecade",{
       type:"bar",
-      data:{labels:dLabels,datasets:[{data:dLabels.map(k=>decades[k]),
+      data:{labels:dLabels.map(k=>decadeLabel[k]||k),datasets:[{data:dLabels.map(k=>decades[k]),
         backgroundColor:dLabels.map((_,i)=>`hsl(${210+i*18},65%,${48+i*3}%)`),
         borderRadius:5,borderSkipped:false}]},
       options:{
@@ -385,7 +388,7 @@ function renderDashboard(){
           x:{grid:{display:false},ticks:{color:"#9090a0"}},
           y:{grid:{color:"#1a1a1e"},ticks:{color:"#606070",precision:0}}
         },
-        plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>`Missing: ${ctx[0].label} films`}}}
+        plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>t("Missing: {label} films", {label: ctx[0].label})}}}
       }
     })
 
@@ -451,7 +454,7 @@ function renderGroupedList({ groups, nameKey, nameIcon, ignoreHandler, emptyMsg,
     const haveSection = haveList.length
       ? `<details class="have-section">
            <summary style="cursor:pointer;font-size:.73rem;color:var(--text3);margin:.5rem 0 .4rem;user-select:none">
-             ▸ In your library (${haveList.length})
+             ▸ ${t("In your library ({n})", {n: haveList.length})}
            </summary>
            <div class="grid-posters" style="opacity:.45;pointer-events:none">
              ${haveList.map(m => posterCard(m)).join("")}
@@ -465,11 +468,11 @@ function renderGroupedList({ groups, nameKey, nameIcon, ignoreHandler, emptyMsg,
         <div>
           <span class="group-name">${nameIcon} ${escHtml(name)}</span>
           ${g.have!==undefined
-            ? `<span class="group-count">${g.have}/${g.total} in library</span>`
-            : `<span class="group-count">${sorted.length} missing</span>`}
+            ? `<span class="group-count">${t("{have}/{total} in library", {have: g.have, total: g.total})}</span>`
+            : `<span class="group-count">${t("{n} missing", {n: sorted.length})}</span>`}
         </div>
         <button class="btn-sm btn-ignore"
-          onclick="${ignoreHandler}('${name.replace(/'/g,"\\'")}',this)">Ignore</button>
+          onclick="${ignoreHandler}('${name.replace(/'/g,"\\'")}',this)">${t("Ignore")}</button>
       </div>
       <div class="grid-posters">${slice.map(m=>posterCard(m)).join("")}</div>
       ${moreBtn}
@@ -485,8 +488,8 @@ function renderGroupedList({ groups, nameKey, nameIcon, ignoreHandler, emptyMsg,
 function renderFranchises(){
   const st = _sectionStatus("franchises")
   const c  = document.getElementById("content")
-  if (st === "pending")   { c.innerHTML = _renderSectionPending("Franchises");           return }
-  if (st === "computing") { c.innerHTML = _renderSectionComputing("Analyzing franchises…"); return }
+  if (st === "pending")   { c.innerHTML = _renderSectionPending(t("Franchises"));        return }
+  if (st === "computing") { c.innerHTML = _renderSectionComputing(t("Analyzing franchises…")); return }
 
   const all        = DATA.franchises || []
   const incomplete = all.filter(f => (f.missing||[]).length > 0)
@@ -494,7 +497,7 @@ function renderFranchises(){
 
   renderGroupedList({
     groups: incomplete, nameKey:"name", nameIcon:"🎬",
-    ignoreHandler:"ignoreFranchise", emptyMsg:"No missing franchise movies 🎉"
+    ignoreHandler:"ignoreFranchise", emptyMsg:t("No missing franchise movies 🎉")
   })
 
   if (complete.length === 0) return
@@ -518,7 +521,7 @@ function renderFranchises(){
         <span class="cfs-chevron" style="font-size:.7rem;color:var(--text3);
                                          transition:transform .2s;display:inline-block">▶</span>
         <span style="font-size:.8rem;font-weight:700;color:#22c55e;letter-spacing:.03em">
-          Complete ✓
+          ${t("Complete")} ✓
         </span>
         <span style="font-size:.78rem;color:var(--text3)">(${complete.length})</span>
       </summary>
@@ -540,11 +543,11 @@ function renderFranchises(){
 function renderDirectors(){
   const st = _sectionStatus("directors")
   const c  = document.getElementById("content")
-  if (st === "pending")   { c.innerHTML = _renderSectionPending("Directors");            return }
-  if (st === "computing") { c.innerHTML = _renderSectionComputing("Analyzing directors…"); return }
+  if (st === "pending")   { c.innerHTML = _renderSectionPending(t("Directors"));         return }
+  if (st === "computing") { c.innerHTML = _renderSectionComputing(t("Analyzing directors…")); return }
   renderGroupedList({
     groups: DATA.directors||[], nameKey:"name", nameIcon:"🎬",
-    ignoreHandler:"ignoreDirector", emptyMsg:"No missing director films found"
+    ignoreHandler:"ignoreDirector", emptyMsg:t("No missing director films found")
   })
 }
 
@@ -553,11 +556,11 @@ function renderDirectors(){
 function renderActors(){
   const st = _sectionStatus("actors")
   const c  = document.getElementById("content")
-  if (st === "pending")   { c.innerHTML = _renderSectionPending("Actors");            return }
-  if (st === "computing") { c.innerHTML = _renderSectionComputing("Analyzing actors…"); return }
+  if (st === "pending")   { c.innerHTML = _renderSectionPending(t("Actors"));         return }
+  if (st === "computing") { c.innerHTML = _renderSectionComputing(t("Analyzing actors…")); return }
   renderGroupedList({
     groups: DATA.actors||[], nameKey:"name", nameIcon:"🎭",
-    ignoreHandler:"ignoreActor", emptyMsg:"No actor suggestions found",
+    ignoreHandler:"ignoreActor", emptyMsg:t("No actor suggestions found"),
     showHave: true,
   })
 }
@@ -590,7 +593,7 @@ function _genrePills(movies) {
                color:${on ? "var(--gold)" : "var(--text3)"};
                font-size:.68rem;cursor:pointer;white-space:nowrap;
                font-family:'DM Mono',monospace;line-height:1.6"
-        >${GENRE_MAP[id]}<span style="opacity:.55;margin-left:.3rem">${cnt}</span></button>`
+        >${genreLabel(id)}<span style="opacity:.55;margin-left:.3rem">${cnt}</span></button>`
     }).join("")
   return `<div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.9rem">${pills}</div>`
 }
@@ -604,7 +607,7 @@ function _addAllBtn(movies) {
              border:1px solid rgba(123,47,190,.4);
              background:rgba(123,47,190,.12);color:#a78bfa;
              cursor:pointer;font-size:.72rem;font-family:'DM Mono',monospace">
-      ⬇ Add all ${movies.length} to Radarr
+      ${t("⬇ Add all {n} to Radarr", {n: movies.length})}
     </button>
   </div>`
 }
@@ -612,14 +615,14 @@ function _addAllBtn(movies) {
 function renderClassics(){
   const st = _sectionStatus("classics")
   const c  = document.getElementById("content")
-  if (st === "pending")   { c.innerHTML = _renderSectionPending("Classics");           return }
-  if (st === "computing") { c.innerHTML = _renderSectionComputing("Building classics…"); return }
+  if (st === "pending")   { c.innerHTML = _renderSectionPending(t("Classics"));        return }
+  if (st === "computing") { c.innerHTML = _renderSectionComputing(t("Building classics…")); return }
   let list   = applyFilters(DATA.classics||[])
-  if (!list.length){ c.innerHTML=emptyStateHTML("No missing classics 🎉"); return }
+  if (!list.length){ c.innerHTML=emptyStateHTML(t("No missing classics 🎉")); return }
   _tabAllMovies = list
   const { slice, btn } = _paginate(list, "classics")
   c.innerHTML = `
-    <p style="color:var(--text3);font-size:.78rem;margin-bottom:.6rem">${list.length} classic films missing from your library</p>
+    <p style="color:var(--text3);font-size:.78rem;margin-bottom:.6rem">${t("{n} classic films missing from your library", {n: list.length})}</p>
     ${_genrePills(list)}
     ${_addAllBtn(list)}
     <div class="grid-posters">${slice.map(m=>posterCard(m)).join("")}</div>${btn}`
@@ -630,16 +633,16 @@ function renderClassics(){
 function renderSuggestions(){
   const st = _sectionStatus("suggestions")
   const c  = document.getElementById("content")
-  if (st === "pending")   { c.innerHTML = _renderSectionPending("Suggestions");              return }
-  if (st === "computing") { c.innerHTML = _renderSectionComputing("Building suggestions…");  return }
+  if (st === "pending")   { c.innerHTML = _renderSectionPending(t("Suggestions"));           return }
+  if (st === "computing") { c.innerHTML = _renderSectionComputing(t("Building suggestions…")); return }
   const owned = new Set(DATA.owned_tmdb_ids||[])
   const raw   = (DATA.suggestions||[]).filter(m => !owned.has(m.tmdb))
   const list  = applyFilters(raw)
-  if (!list.length){ c.innerHTML=emptyStateHTML("No suggestions available"); return }
+  if (!list.length){ c.innerHTML=emptyStateHTML(t("No suggestions available")); return }
   _tabAllMovies = list
   const { slice, btn } = _paginate(list, "suggestions")
   c.innerHTML = `
-    <p style="color:var(--text3);font-size:.78rem;margin-bottom:.6rem">${list.length} films recommended by your library</p>
+    <p style="color:var(--text3);font-size:.78rem;margin-bottom:.6rem">${t("{n} films recommended by your library", {n: list.length})}</p>
     ${_genrePills(list)}
     ${_addAllBtn(list)}
     <div class="grid-posters">${slice.map(m => suggestionCard(m)).join("")}</div>${btn}`
@@ -652,7 +655,7 @@ async function renderWishlist(){
   const list = applyFilters(DATA.wishlist||[], { skipWatchedFilter: true })
 
   if (!list.length){
-    c.innerHTML = emptyStateHTML("Wishlist is empty")
+    c.innerHTML = emptyStateHTML(t("Wishlist is empty"))
     return
   }
 
@@ -672,9 +675,9 @@ async function renderWishlist(){
     <div class="grid-posters">${slice.map(m => {
       const s = radarrStatuses[m.tmdb]
       const badge = s === "available"
-        ? `<span style="background:var(--radarr,#7B2FBE);color:#fff;font-size:.58rem;padding:1px 5px;border-radius:3px;vertical-align:middle">✓ In Radarr</span>`
+        ? `<span style="background:var(--radarr,#7B2FBE);color:#fff;font-size:.58rem;padding:1px 5px;border-radius:3px;vertical-align:middle">✓ ${t("In Radarr")}</span>`
         : s === "monitored"
-        ? `<span style="background:var(--gold);color:#000;font-size:.58rem;padding:1px 5px;border-radius:3px;vertical-align:middle">⬇ Searching</span>`
+        ? `<span style="background:var(--gold);color:#000;font-size:.58rem;padding:1px 5px;border-radius:3px;vertical-align:middle">⬇ ${t("Searching")}</span>`
         : ""
       return posterCard(m, badge)
     }).join("")}</div>${btn}`
@@ -691,34 +694,34 @@ async function renderTheaters() {
   // Show skeleton on first load
   if (!_theaterCache && !_theaterFetching) {
     _theaterFetching = true
-    c.innerHTML = _renderSectionComputing("Fetching from TMDB…")
+    c.innerHTML = _renderSectionComputing(t("Fetching from TMDB…"))
     try {
       const res = await api("/api/theaters")
       if (!res.ok) {
-        c.innerHTML = emptyStateHTML(res.error || "Failed to load theater data")
+        c.innerHTML = emptyStateHTML(res.error || t("Failed to load theater data"))
         _theaterFetching = false
         return
       }
       _theaterCache = res
     } catch(e) {
-      c.innerHTML = emptyStateHTML("Failed to load theater data")
+      c.innerHTML = emptyStateHTML(t("Failed to load theater data"))
       _theaterFetching = false
       return
     }
     _theaterFetching = false
   }
 
-  if (!_theaterCache) { c.innerHTML = _renderSectionComputing("Loading…"); return }
+  if (!_theaterCache) { c.innerHTML = _renderSectionComputing(t("Loading…")); return }
 
   const all  = _theaterCache.movies || []
   const list = applyFilters(all)
 
   if (!all.length) {
-    c.innerHTML = emptyStateHTML("No upcoming films found — check your TMDB API key")
+    c.innerHTML = emptyStateHTML(t("No upcoming films found — check your TMDB API key"))
     return
   }
   if (!list.length) {
-    c.innerHTML = emptyStateHTML("No films match the current filters")
+    c.innerHTML = emptyStateHTML(t("No films match the current filters"))
     return
   }
 
@@ -726,10 +729,10 @@ async function renderTheaters() {
   const { slice, btn } = _paginate(list, "theaters")
   c.innerHTML = `
     <p style="color:var(--text3);font-size:.78rem;margin-bottom:.6rem">
-      ${list.length} films now playing or coming soon · not in your library
+      ${t("{n} films now playing or coming soon · not in your library", {n: list.length})}
       <button onclick="_theaterCache=null;renderTheaters()"
         style="margin-left:.75rem;background:none;border:none;color:var(--text3);
-               cursor:pointer;font-size:.78rem;vertical-align:middle" title="Refresh">↻</button>
+               cursor:pointer;font-size:.78rem;vertical-align:middle" title="${t("Refresh")}">↻</button>
     </p>
     ${_genrePills(list)}
     ${_addAllBtn(list)}
@@ -757,25 +760,25 @@ function _lbUrlManager(savedUrls, moviesRes) {
                        white-space:nowrap" title="${safe}">${safe}</span>
           <button onclick="removeLbUrl('${safeJs}',this)"
             style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:.85rem;
-                   padding:2px 6px;flex-shrink:0" title="Remove">✕</button>
+                   padding:2px 6px;flex-shrink:0" title="${t("Remove")}">✕</button>
         </div>`
       }).join("")
-    : `<p style="color:var(--text3);font-size:.75rem;padding:.4rem 0">No lists added yet</p>`
+    : `<p style="color:var(--text3);font-size:.75rem;padding:.4rem 0">${t("No lists added yet")}</p>`
 
   const count = moviesRes?.movies?.length || 0
   const owned = moviesRes?.owned_count   || 0
   const stats = count
-    ? `<span style="color:var(--text3);font-size:.72rem">${count} movies${owned ? ` · ${owned} already owned hidden` : ""}</span>`
+    ? `<span style="color:var(--text3);font-size:.72rem">${t("{n} movies", {n: count})}${owned ? ` · ${t("{n} already owned hidden", {n: owned})}` : ""}</span>`
     : ""
 
   const isRefreshing = _lbPollTimer !== null || moviesRes?.refreshing
   let freshness = ""
   if (isRefreshing) {
-    freshness = `<span style="color:var(--text3);font-size:.7rem;font-style:italic">↻ Refreshing…</span>`
+    freshness = `<span style="color:var(--text3);font-size:.7rem;font-style:italic">↻ ${t("Refreshing…")}</span>`
   } else if (moviesRes?.fetched_at) {
     const mins = Math.round((Date.now() - new Date(moviesRes.fetched_at)) / 60000)
-    const label = mins < 1 ? "just now" : `${mins}m ago`
-    freshness = `<span style="color:var(--text3);font-size:.7rem">Updated ${label}</span>`
+    const label = mins < 1 ? t("Updated just now") : t("Updated {n}m ago", {n: mins})
+    freshness = `<span style="color:var(--text3);font-size:.7rem">${label}</span>`
   }
 
   return `
@@ -783,18 +786,18 @@ function _lbUrlManager(savedUrls, moviesRes) {
                 padding:1rem 1.2rem;margin-bottom:1.5rem">
       <div style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
                   color:var(--text3);margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem">
-        Letterboxd Lists
+        ${t("Letterboxd Lists")}
         ${stats}
         ${freshness}
         <button onclick="triggerLbRefresh()"
           style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;
-                 font-size:.85rem;padding:2px 6px;flex-shrink:0;line-height:1" title="Refresh">↻</button>
+                 font-size:.85rem;padding:2px 6px;flex-shrink:0;line-height:1" title="${t("Refresh")}">↻</button>
       </div>
       <div style="margin-bottom:.75rem">${urlList}</div>
       <div style="display:flex;flex-direction:column;gap:.35rem">
         <div style="display:flex;gap:.5rem;align-items:center">
           <input id="lbUrlInput" type="url"
-            placeholder="e.g. letterboxd.com/you/watchlist/ or /list/my-list/"
+            placeholder="${t("e.g. letterboxd.com/you/watchlist/ or /list/my-list/")}"
             style="flex:1;min-width:0;padding:6px 10px;border-radius:7px;border:1px solid var(--border2);
                    background:var(--bg3);color:var(--text);font-size:.78rem;font-family:'DM Mono',monospace"
             onkeydown="if(event.key==='Enter')addLbUrl(this)"/>
@@ -802,16 +805,16 @@ function _lbUrlManager(savedUrls, moviesRes) {
             style="white-space:nowrap;padding:6px 14px;border-radius:7px;border:1px solid var(--border2);
                    background:var(--bg3);color:var(--text2);cursor:pointer;font-size:.75rem;
                    font-family:'DM Mono',monospace;flex-shrink:0">
-            + Add
+            + ${t("Add")}
           </button>
         </div>
         <p style="color:var(--text3);font-size:.7rem;margin:0">
-          Supports watchlists, named lists, diary feeds and profile RSS.
-          E.g. <code style="color:var(--gold);font-size:.68rem">letterboxd.com/you/watchlist/</code> ·
+          ${t("Supports watchlists, named lists, diary feeds and profile RSS.")}
+          ${t("E.g.")} <code style="color:var(--gold);font-size:.68rem">letterboxd.com/you/watchlist/</code> ·
           <code style="color:var(--gold);font-size:.68rem">letterboxd.com/you/list/best-of-2024/</code> ·
           <code style="color:var(--gold);font-size:.68rem">letterboxd.com/you/rss/</code>.
-          Profile RSS feeds from curators are auto-expanded into their individual lists.
-          All lists must be public.
+          ${t("Profile RSS feeds from curators are auto-expanded into their individual lists.")}
+          ${t("All lists must be public.")}
         </p>
       </div>
     </div>`
@@ -828,7 +831,7 @@ async function renderLetterboxd() {
       api("/api/letterboxd/movies"),
     ])
   } catch(e) {
-    c.innerHTML = emptyStateHTML("Failed to load Letterboxd data")
+    c.innerHTML = emptyStateHTML(t("Failed to load Letterboxd data"))
     return
   }
 
@@ -845,7 +848,7 @@ async function renderLetterboxd() {
 
   // If server returned an error (e.g. TMDB not configured), show it
   if (!moviesRes.ok) {
-    c.innerHTML = _lbUrlManager(savedUrls) + emptyStateHTML(moviesRes.error || "Failed to load movies")
+    c.innerHTML = _lbUrlManager(savedUrls) + emptyStateHTML(moviesRes.error || t("Failed to load movies"))
     return
   }
 
@@ -856,10 +859,10 @@ async function renderLetterboxd() {
 
   if (!movies.length) {
     const hint = moviesRes.unique > 0
-      ? `Found ${moviesRes.unique} movie IDs in RSS but TMDB enrichment returned nothing — check your TMDB API key`
+      ? t("Found {n} movie IDs in RSS but TMDB enrichment returned nothing — check your TMDB API key", {n: moviesRes.unique})
       : savedUrls.length
-        ? "No movies found — make sure the list is public and is a watchlist or named list (not a profile page)"
-        : "Add a Letterboxd list above to get started"
+        ? t("No movies found — make sure the list is public and is a watchlist or named list (not a profile page)")
+        : t("Add a Letterboxd list above to get started")
     c.innerHTML = urlManager + emptyStateHTML(hint)
     return
   }
@@ -871,7 +874,7 @@ async function renderLetterboxd() {
   c.innerHTML = urlManager +
     (maxScore > 1
       ? `<p style="color:var(--text3);font-size:.75rem;margin-bottom:.6rem">
-           Gold badge = appears in multiple lists · sorted by frequency then rating</p>`
+           ${t("Gold badge = appears in multiple lists · sorted by frequency then rating")}</p>`
       : "") +
     _genrePills(filtered) +
     _addAllBtn(filtered) +
@@ -888,17 +891,17 @@ async function renderQualityUpgrades() {
 
   if (!_upgradeCache && !_upgradeFetching) {
     _upgradeFetching = true
-    c.innerHTML = _renderSectionComputing("Checking Radarr library…")
+    c.innerHTML = _renderSectionComputing(t("Checking Radarr library…"))
     try {
       const res = await api("/api/quality/upgrades")
       if (!res.ok) {
-        c.innerHTML = emptyStateHTML(res.error || "Failed to load quality data")
+        c.innerHTML = emptyStateHTML(res.error || t("Failed to load quality data"))
         _upgradeFetching = false
         return
       }
       _upgradeCache = res
     } catch(e) {
-      c.innerHTML = emptyStateHTML("Failed to load quality data")
+      c.innerHTML = emptyStateHTML(t("Failed to load quality data"))
       _upgradeFetching = false
       return
     }
@@ -913,9 +916,9 @@ async function renderQualityUpgrades() {
       <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem">
         <button onclick="_upgradeCache=null;renderQualityUpgrades()"
           style="background:none;border:1px solid var(--border2);color:var(--text3);
-                 border-radius:6px;padding:.3rem .75rem;font-size:.75rem;cursor:pointer">⟳ Refresh</button>
+                 border-radius:6px;padding:.3rem .75rem;font-size:.75rem;cursor:pointer">⟳ ${t("Refresh")}</button>
       </div>` +
-      emptyStateHTML("All your movies are already in Radarr 4K, or none qualify for upgrade")
+      emptyStateHTML(t("All your movies are already in Radarr 4K, or none qualify for upgrade"))
     return
   }
 
@@ -926,11 +929,11 @@ async function renderQualityUpgrades() {
   const header = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
       <p style="color:var(--text3);font-size:.75rem;margin:0">
-        ${movies.length} movie${movies.length!==1?"s":""} at 720p or lower in your Radarr library — not yet in Radarr 4K
+        ${tn(movies.length, "{n} movie at 720p or lower in your Radarr library — not yet in Radarr 4K", "{n} movies at 720p or lower in your Radarr library — not yet in Radarr 4K")}
       </p>
       <button onclick="_upgradeCache=null;renderQualityUpgrades()"
         style="background:none;border:1px solid var(--border2);color:var(--text3);
-               border-radius:6px;padding:.3rem .75rem;font-size:.75rem;cursor:pointer">⟳ Refresh</button>
+               border-radius:6px;padding:.3rem .75rem;font-size:.75rem;cursor:pointer">⟳ ${t("Refresh")}</button>
     </div>`
 
   c.innerHTML = header +
@@ -967,10 +970,10 @@ function _startLbPoll() {
 
 async function renderIgnored(){
   const c = document.getElementById("content")
-  c.innerHTML = `<p style="color:var(--text3);font-size:.78rem">Loading…</p>`
+  c.innerHTML = `<p style="color:var(--text3);font-size:.78rem">${t("Loading…")}</p>`
 
   const res = await api("/api/ignored")
-  if (!res.ok) { c.innerHTML = emptyStateHTML("Could not load ignored list"); return }
+  if (!res.ok) { c.innerHTML = emptyStateHTML(t("Could not load ignored list")); return }
 
   const movies     = res.movies     || []
   const franchises = res.franchises || []
@@ -981,10 +984,12 @@ async function renderIgnored(){
   const hasMovies = movies.length
 
   if (!hasGroups && !hasMovies) {
-    c.innerHTML = emptyStateHTML("No ignored movies — click 🚫 on any card to hide it permanently")
+    c.innerHTML = emptyStateHTML(t("No ignored movies — click 🚫 on any card to hide it permanently"))
     return
   }
 
+  // kind is an internal value; only the tag label is translated
+  const kindLabel  = { franchise: t("Franchise"), director: t("Director"), actor: t("Actor") }
   const _groupRows = (items, kind, tagCls) => items.map(name => {
     const safe  = escHtml(name)
     const safeJs = name.replace(/\\/g,"\\\\").replace(/'/g,"\\'")
@@ -994,11 +999,11 @@ async function renderIgnored(){
     return `
       <div class="meta-item" style="justify-content:space-between;gap:.5rem">
         <div style="display:flex;align-items:center;gap:.5rem;min-width:0">
-          <span class="tag ${tagCls}" style="flex-shrink:0;font-size:.6rem;padding:1px 5px">${kind.toUpperCase()}</span>
+          <span class="tag ${tagCls}" style="flex-shrink:0;font-size:.6rem;padding:1px 5px">${(kindLabel[kind] || kind).toLocaleUpperCase(LOCALE)}</span>
           <span class="meta-item-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${safe}">${safe}</span>
         </div>
         <button class="btn-sm" style="color:var(--green);flex-shrink:0"
-          onclick="${fn}('${safeJs}',this)">↩ Restore</button>
+          onclick="${fn}('${safeJs}',this)">↩ ${t("Restore")}</button>
       </div>`
   }).join("")
 
@@ -1008,7 +1013,7 @@ async function renderIgnored(){
     const totalGroups = franchises.length + directors.length + actors.length
     html += `
       <p style="color:var(--text3);font-size:.78rem;margin-bottom:.75rem">
-        ${totalGroups} ignored group${totalGroups!==1?"s":""} — entire collections, directors or actors hidden from suggestions.
+        ${tn(totalGroups, "{n} ignored group — entire collections, directors or actors hidden from suggestions.", "{n} ignored groups — entire collections, directors or actors hidden from suggestions.")}
       </p>
       <div style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:2rem">
         ${_groupRows(franchises, "franchise", "tag-gold")}
@@ -1020,26 +1025,26 @@ async function renderIgnored(){
   if (hasMovies) {
     html += `
       <p style="color:var(--text3);font-size:.78rem;margin-bottom:1rem">
-        ${movies.length} ignored movie${movies.length!==1?"s":""} — these will never appear in Missing, Classics or Suggestions.
+        ${tn(movies.length, "{n} ignored movie — these will never appear in Missing, Classics or Suggestions.", "{n} ignored movies — these will never appear in Missing, Classics or Suggestions.")}
       </p>
       <div class="grid-posters">
         ${movies.map(m => {
           const safeName = (m.title||"").replace(/'/g,"\\'").replace(/"/g,"&quot;")
           const imgHtml  = m.poster
             ? `<img class="pc-img" src="${m.poster}" loading="lazy" alt=""/>`
-            : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>No Image</span></div>`
+            : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>${t("No Image")}</span></div>`
           return `
             <div class="pc" id="ignored-${m.tmdb}">
               ${imgHtml}
               <div class="pc-info">
-                <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||"Untitled")}</div>
+                <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||t("Untitled"))}</div>
                 <div class="pc-meta">${m.year?`<span>${m.year}</span>`:""}</div>
               </div>
               <div class="pc-overlay">
-                <div class="pc-overlay-title">${escHtml(m.title||"Untitled")}</div>
+                <div class="pc-overlay-title">${escHtml(m.title||t("Untitled"))}</div>
                 <div class="pc-overlay-actions">
                   <button class="btn-sm" onclick="unignoreMovie(${m.tmdb},'${safeName}',this)"
-                    style="color:var(--green)">↩ Restore</button>
+                    style="color:var(--green)">↩ ${t("Restore")}</button>
                 </div>
               </div>
             </div>`
@@ -1055,14 +1060,14 @@ async function renderIgnored(){
 function renderNoTmdb(){
   const c    = document.getElementById("content")
   const list = DATA.no_tmdb_guid||[]
-  if (!list.length){ c.innerHTML=emptyStateHTML("All movies have a TMDB GUID 🎉"); return }
+  if (!list.length){ c.innerHTML=emptyStateHTML(t("All movies have a TMDB GUID 🎉")); return }
   c.innerHTML = `
-    <p style="color:var(--text3);font-size:.78rem;margin-bottom:1rem">${list.length} movies without a TMDB GUID — fix via Plex → Fix Match → TheMovieDB</p>
+    <p style="color:var(--text3);font-size:.78rem;margin-bottom:1rem">${t("{n} movies without a TMDB GUID — fix via Plex → Fix Match → TheMovieDB", {n: list.length})}</p>
     <div style="display:flex;flex-direction:column;gap:.4rem">
       ${list.map(m=>`
       <div class="meta-item">
-        <span class="tag tag-red" style="flex-shrink:0">NO GUID</span>
-        <span class="meta-item-title">${escHtml(m.title||"Unknown")}</span>
+        <span class="tag tag-red" style="flex-shrink:0">${t("NO GUID")}</span>
+        <span class="meta-item-title">${escHtml(m.title||t("Unknown"))}</span>
         ${m.year?`<span class="meta-item-year">(${m.year})</span>`:""}
       </div>`).join("")}
     </div>`
@@ -1073,21 +1078,21 @@ function renderNoTmdb(){
 function renderNoMatch(){
   const c    = document.getElementById("content")
   const list = DATA.tmdb_not_found||[]
-  if (!list.length){ c.innerHTML=emptyStateHTML("All TMDB matches resolved 🎉"); return }
+  if (!list.length){ c.innerHTML=emptyStateHTML(t("All TMDB matches resolved 🎉")); return }
   c.innerHTML = `
     <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
-      <p style="color:var(--text3);font-size:.78rem;margin:0">${list.length} movies with invalid TMDB metadata — failed lookups are retried automatically on next scan.</p>
+      <p style="color:var(--text3);font-size:.78rem;margin:0">${t("{n} movies with invalid TMDB metadata — failed lookups are retried automatically on next scan.", {n: list.length})}</p>
       <button onclick="rescan()"
         style="flex-shrink:0;font-size:.72rem;padding:4px 12px;border-radius:6px;border:1px solid var(--border2);
                background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace">
-        ↻ Retry now
+        ↻ ${t("Retry now")}
       </button>
     </div>
     <div style="display:flex;flex-direction:column;gap:.4rem">
       ${list.map(m=>`
       <div class="meta-item">
-        <span class="tag tag-red" style="flex-shrink:0">NO MATCH</span>
-        <span class="meta-item-title">${escHtml(m.title || "Unknown title")}</span>
+        <span class="tag tag-red" style="flex-shrink:0">${t("NO MATCH")}</span>
+        <span class="meta-item-title">${escHtml(m.title || t("Unknown title"))}</span>
         <span class="meta-item-year">${tag(`tmdb:${m.tmdb}`)}</span>
       </div>`).join("")}
     </div>`
@@ -1099,11 +1104,11 @@ async function renderLogs(){
   const c = document.getElementById("content")
   c.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-      <p style="color:var(--text3);font-size:.78rem">Last 200 lines of <code style="color:var(--gold)">/data/cineplete.log</code></p>
-      <button onclick="renderLogs()" style="font-size:.65rem;padding:3px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace">↻ Refresh</button>
+      <p style="color:var(--text3);font-size:.78rem">${t("Last {n} lines of {file}", {n: 200, file: '<code style="color:var(--gold)">/data/cineplete.log</code>'})}</p>
+      <button onclick="renderLogs()" style="font-size:.65rem;padding:3px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace">↻ ${t("Refresh")}</button>
     </div>
     <div id="log-box" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem;font-family:'DM Mono',monospace;font-size:.72rem;line-height:1.7;overflow-x:auto;max-height:75vh;overflow-y:auto">
-      <span style="color:var(--text3)">Loading...</span>
+      <span style="color:var(--text3)">${t("Loading...")}</span>
     </div>`
 
   try {
@@ -1129,7 +1134,7 @@ async function renderLogs(){
       box.innerHTML = ""
       const span = document.createElement("span")
       span.style.color = "var(--red)"
-      span.textContent = "Failed to fetch logs: " + e.message
+      span.textContent = t("Failed to fetch logs: {error}", {error: e.message})
       box.appendChild(span)
     }
   }
@@ -1141,14 +1146,14 @@ function renderDuplicates(){
   const c    = document.getElementById("content")
   const list = DATA.duplicates || []
   if (!list.length){
-    c.innerHTML = emptyStateHTML("No multi-version entries detected 🎉")
+    c.innerHTML = emptyStateHTML(t("No multi-version entries detected 🎉"))
     return
   }
   c.innerHTML = `
     <p style="color:var(--text3);font-size:.78rem;margin-bottom:1rem">
-      ${list.length} TMDB ID${list.length > 1 ? "s" : ""} appear more than once in your library.<br>
-      This is usually <strong style="color:var(--text2)">intentional</strong> — e.g. Theatrical + Director's Cut share the same TMDB ID.
-      Review and remove any unintentional copies from your media server.
+      ${tn(list.length, "{n} TMDB ID appear more than once in your library.", "{n} TMDB IDs appear more than once in your library.")}<br>
+      ${t("This is usually {intentional} — e.g. Theatrical + Director's Cut share the same TMDB ID.", {intentional: `<strong style="color:var(--text2)">${t("intentional")}</strong>`})}
+      ${t("Review and remove any unintentional copies from your media server.")}
     </p>
     <div style="display:flex;flex-direction:column;gap:.4rem">
       ${list.map(d=>{
@@ -1157,14 +1162,14 @@ function renderDuplicates(){
         const allSame    = new Set(titles.map(t => t.title)).size === 1
         const isDupe     = !hasEdition && allSame
         const tagCls     = isDupe ? "tag-red" : "tag-gold"
-        const tagLbl     = isDupe ? "DUPE" : "MULTI"
+        const tagLbl     = isDupe ? t("DUPE") : t("MULTI")
         const titleHtml  = titles.map(t => {
           const lbl = escHtml(t.title) + (t.edition ? ` <span style="color:var(--text3);font-size:.75em">[${escHtml(t.edition)}]</span>` : "")
           return lbl
         }).join(`<span style="color:var(--text3);margin:0 .3rem">·</span>`)
         return `
         <div class="meta-item">
-          <span class="tag ${tagCls}" style="flex-shrink:0" title="${allSame ? "Same title — likely a true duplicate" : "Different titles — likely different editions"}">${tagLbl}</span>
+          <span class="tag ${tagCls}" style="flex-shrink:0" title="${allSame ? t("Same title — likely a true duplicate") : t("Different titles — likely different editions")}">${tagLbl}</span>
           <span class="meta-item-title">${titleHtml}</span>
           <span class="meta-item-year">
             ${tag(`tmdb:${d.tmdb}`)}
@@ -1175,8 +1180,8 @@ function renderDuplicates(){
       }).join("")}
     </div>
     <p style="color:var(--text3);font-size:.68rem;margin-top:1rem">
-      <span style="color:var(--red)">DUPE</span> = identical titles (likely unintentional) &nbsp;·&nbsp;
-      <span style="color:var(--gold)">MULTI</span> = different titles (likely different editions — OK to keep)
+      <span style="color:var(--red)">${t("DUPE")}</span> = ${t("identical titles (likely unintentional)")} &nbsp;·&nbsp;
+      <span style="color:var(--gold)">${t("MULTI")}</span> = ${t("different titles (likely different editions — OK to keep)")}
     </p>`
 }
 
@@ -1191,7 +1196,10 @@ function exportCurrent(format = "csv") {
   a.href    = url
   a.download = `cineplete-${ACTIVE_TAB}.csv`
   a.click()
-  toast(`Exporting ${ACTIVE_TAB} as ${format.toUpperCase()}`, "info")
+  // ACTIVE_TAB is an internal id — show its translated name, keep the id for the URL
+  const tabLabel = { franchises: t("Franchises"), directors: t("Directors"), actors: t("Actors"),
+                     classics: t("Classics"), suggestions: t("Suggestions"), wishlist: t("Wishlist") }
+  toast(t("Exporting {tab} as {format}", {tab: LANG === "en" ? ACTIVE_TAB : (tabLabel[ACTIVE_TAB] || ACTIVE_TAB), format: format.toUpperCase()}), "info")
 }
 
 async function copyLetterboxdToClipboard() {
@@ -1200,9 +1208,9 @@ async function copyLetterboxdToClipboard() {
     const res  = await fetch(`/api/export?format=letterboxd&tab=${ACTIVE_TAB}`)
     const text = await res.text()
     await navigator.clipboard.writeText(text)
-    toast("Letterboxd list copied to clipboard!", "success")
+    toast(t("Letterboxd list copied to clipboard!"), "success")
   } catch(e) {
-    toast("Could not copy to clipboard", "error")
+    toast(t("Could not copy to clipboard"), "error")
   }
 }
 

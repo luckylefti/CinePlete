@@ -6,6 +6,7 @@ import os
 import threading
 
 from app.logger import get_logger
+from app.i18n import tmdb_language, DEFAULT_TMDB_LANGUAGE
 
 log = get_logger(__name__)
 
@@ -48,9 +49,12 @@ def save_cache(cache):
 
 class TMDB:
 
-    def __init__(self, api_key, delay=0.02):
-        self.api_key = api_key
-        self.delay   = delay
+    def __init__(self, api_key, delay=0.02, language=None):
+        self.api_key  = api_key
+        self.delay    = delay
+        # TMDB response language ("de-DE" → German titles/overviews/collection names).
+        # None = read TMDB.TMDB_LANGUAGE from config.
+        self.language = language or tmdb_language()
         self.cache   = load_cache()
         self._calls_since_flush = 0
         self._error_count = 0
@@ -131,7 +135,23 @@ class TMDB:
 
         return {}
 
-    def get(self, url: str) -> dict:
+    def _localize(self, url: str) -> str:
+        """
+        Append &language= to TMDB API URLs that don't set one themselves.
+        The default (en-US) is TMDB's own default, so the URL — and therefore
+        the cache key — stays unchanged and existing caches remain valid.
+        A different language gets its own cache entries.
+        """
+        if (self.language == DEFAULT_TMDB_LANGUAGE
+                or "api.themoviedb.org" not in url
+                or "language=" in url):
+            return url
+        sep = "&" if "?" in url else "?"
+        return f"{url}{sep}language={self.language}"
+
+    def get(self, url: str, localize: bool = True) -> dict:
+        if localize:
+            url = self._localize(url)
         cache_key = self._cache_key(url)
 
         # Cache hit — check under lock, return immediately
@@ -177,7 +197,14 @@ class TMDB:
             f"https://api.themoviedb.org/3/movie/{tmdb_id}"
             f"?api_key={self.api_key}"
         )
-        return self.get(url)
+        md = self.get(url)
+        # TMDB returns an empty overview when no translation exists —
+        # fall back to the English one instead of showing nothing.
+        if md and not md.get("overview") and self.language != DEFAULT_TMDB_LANGUAGE:
+            en = self.get(url, localize=False)
+            if en.get("overview"):
+                md = {**md, "overview": en["overview"]}
+        return md
 
     def collection(self, collection_id: int) -> dict:
         url = (

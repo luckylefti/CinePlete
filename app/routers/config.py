@@ -15,6 +15,7 @@ from app.config import load_config, save_config, is_configured, config_issues
 from app.auth import hash_password, generate_secret_key
 from app import scheduler
 from app.routers._shared import log
+from app.i18n import tr
 
 router = APIRouter()
 
@@ -71,7 +72,7 @@ def api_save_config(payload: dict = Body(...)):
         cfg = save_config(payload)
     except OSError as e:
         log.error(f"Cannot write config file: {e}")
-        return {"ok": False, "error": f"Cannot write to /config — check folder permissions and PUID/PGID ({e})"}
+        return {"ok": False, "error": tr("Cannot write to /config — check folder permissions and PUID/PGID ({e})", e=e)}
     scheduler.restart()
     return {"ok": True, "configured": is_configured(cfg)}
 
@@ -92,15 +93,16 @@ def library_test(payload: dict = Body(...)):
             prefix  = "/emby" if lib_type == "emby" else ""
             name    = lib_type.capitalize()
             if not url or not key:
-                return {"ok": False, "error": "URL and API key are required"}
+                return {"ok": False, "error": tr("URL and API key are required")}
             if urlparse(url).scheme not in ("http", "https"):
-                return {"ok": False, "error": "URL must start with http:// or https://"}
+                return {"ok": False, "error": tr("URL must start with http:// or https://")}
             r = _req.get(f"{url}{prefix}/Library/MediaFolders",
                          headers={"X-Emby-Token": key}, timeout=10)
             r.raise_for_status()
             folders = [i.get("Name","") for i in r.json().get("Items",[])]
             if lib and lib not in folders:
-                return {"ok": False, "error": f"Library '{lib}' not found. Available: {', '.join(folders)}"}
+                return {"ok": False, "error": tr("Library '{name}' not found. Available: {available}",
+                                                     name=lib, available=", ".join(folders))}
             return {"ok": True, "libraries": folders}
         else:
             from app.plex_xml import plex_get
@@ -109,30 +111,31 @@ def library_test(payload: dict = Body(...)):
             token = payload.get("token", "")
             lib   = payload.get("library_name", "")
             if not url or not token:
-                return {"ok": False, "error": "URL and token are required"}
+                return {"ok": False, "error": tr("URL and token are required")}
             if urlparse(url).scheme not in ("http", "https"):
-                return {"ok": False, "error": "URL must start with http:// or https://"}
+                return {"ok": False, "error": tr("URL must start with http:// or https://")}
             import requests as _req
             lib_cfg = {"url": url, "token": token, "library_name": lib,
                        "page_size": 500, "short_movie_limit": 60}
             try:
                 xml  = plex_get("/library/sections", lib_cfg)
             except _req.exceptions.ConnectionError as ce:
-                return {"ok": False, "error": f"Cannot reach Plex at {url} — {ce}"}
+                return {"ok": False, "error": tr("Cannot reach Plex at {url} — {e}", url=url, e=ce)}
             except _req.exceptions.HTTPError as he:
                 code = he.response.status_code if he.response is not None else "?"
                 if code == 401:
-                    return {"ok": False, "error": "Invalid Plex token (401 Unauthorized)"}
-                return {"ok": False, "error": f"Plex returned HTTP {code}"}
+                    return {"ok": False, "error": tr("Invalid Plex token (401 Unauthorized)")}
+                return {"ok": False, "error": tr("Plex returned HTTP {code}", code=code)}
             root = _ET.fromstring(xml)
             libs = [d.attrib.get("title","") for d in root.findall("Directory")
                     if d.attrib.get("type") == "movie"]
             if lib and lib not in libs:
-                return {"ok": False, "error": f"Library '{lib}' not found. Available: {', '.join(libs) or 'none'}"}
+                return {"ok": False, "error": tr("Library '{name}' not found. Available: {available}",
+                                                     name=lib, available=", ".join(libs) or tr("none"))}
             return {"ok": True, "libraries": libs}
     except Exception as e:
         log.warning(f"Library test failed: {e}")
-        return {"ok": False, "error": str(e) or "Could not connect — check URL and credentials"}
+        return {"ok": False, "error": str(e) or tr("Could not connect — check URL and credentials")}
 
 
 # --------------------------------------------------
@@ -142,14 +145,14 @@ def library_test(payload: dict = Body(...)):
 def _test_emby_like(url: str, token: str, library: str, path_prefix: str, server_name: str):
     """Shared logic for testing Jellyfin and Emby connectivity."""
     if not url or not token:
-        return {"ok": False, "error": "URL and API key are required"}
+        return {"ok": False, "error": tr("URL and API key are required")}
 
     try:
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https") or not parsed.netloc:
-            return {"ok": False, "error": "URL must start with http:// or https://"}
+            return {"ok": False, "error": tr("URL must start with http:// or https://")}
     except Exception:
-        return {"ok": False, "error": "Invalid URL format"}
+        return {"ok": False, "error": tr("Invalid URL format")}
 
     headers = {"X-Emby-Token": token}
 
@@ -157,16 +160,16 @@ def _test_emby_like(url: str, token: str, library: str, path_prefix: str, server
         r = requests.get(f"{url}{path_prefix}/System/Info", headers=headers, timeout=10)
         r.raise_for_status()
     except requests.exceptions.ConnectionError:
-        return {"ok": False, "error": f"Cannot connect to {url}"}
+        return {"ok": False, "error": tr("Cannot connect to {url}", url=url)}
     except requests.exceptions.HTTPError as e:
         if e.response is not None and e.response.status_code == 401:
-            return {"ok": False, "error": "Invalid API key"}
-        return {"ok": False, "error": f"Server error: {e}"}
+            return {"ok": False, "error": tr("Invalid API key")}
+        return {"ok": False, "error": tr("Server error: {e}", e=e)}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
     if not library:
-        return {"ok": True, "message": "Connected successfully"}
+        return {"ok": True, "message": tr("Connected successfully")}
 
     try:
         r2 = requests.get(f"{url}{path_prefix}/Library/MediaFolders", headers=headers, timeout=10)
@@ -174,10 +177,11 @@ def _test_emby_like(url: str, token: str, library: str, path_prefix: str, server
         folders = [i.get("Name", "") for i in r2.json().get("Items", [])]
         match = next((f for f in folders if f.lower() == library.lower()), None)
         if not match:
-            return {"ok": False, "error": f"Library '{library}' not found. Available: {', '.join(folders) or 'none'}"}
-        return {"ok": True, "message": f"Connected — library '{match}' found"}
+            return {"ok": False, "error": tr("Library '{name}' not found. Available: {available}",
+                                        name=library, available=", ".join(folders) or tr("none"))}
+        return {"ok": True, "message": tr("Connected — library '{name}' found", name=match)}
     except Exception as e:
-        return {"ok": False, "error": f"Could not list libraries: {e}"}
+        return {"ok": False, "error": tr("Could not list libraries: {e}", e=e)}
 
 
 @router.post("/api/jellyfin/test")

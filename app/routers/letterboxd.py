@@ -19,6 +19,7 @@ from fastapi import APIRouter, Body
 
 from app.config import load_config
 from app.overrides import load_json, save_json, add_unique
+from app.i18n import tr
 from app.scanner import load_snapshot
 from app.routers._shared import (
     log, OVERRIDES_FILE, LETTERBOXD_CACHE_FILE, _validate_url_for_fetch,
@@ -347,13 +348,13 @@ def _validate_letterboxd_url(url: str):
     """Return (cleaned_url, error_string_or_None)."""
     url = url.strip()
     if not url:
-        return None, "URL is required"
+        return None, tr("URL is required")
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
-        return None, "Invalid URL"
+        return None, tr("Invalid URL")
     host = parsed.netloc.lower().replace("www.", "")
     if "letterboxd.com" not in host:
-        return None, "Only Letterboxd URLs are supported"
+        return None, tr("Only Letterboxd URLs are supported")
     return url, None
 
 
@@ -482,15 +483,15 @@ def import_watchlist(payload: dict = Body(...)):
     """
     url = str(payload.get("url", "")).strip()
     if not url:
-        return {"ok": False, "error": "URL is required"}
+        return {"ok": False, "error": tr("URL is required")}
 
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
-        return {"ok": False, "error": "Invalid URL"}
+        return {"ok": False, "error": tr("Invalid URL")}
 
     host = parsed.netloc.lower().replace("www.", "")
     if "letterboxd.com" not in host:
-        return {"ok": False, "error": "Only Letterboxd URLs are supported"}
+        return {"ok": False, "error": tr("Only Letterboxd URLs are supported")}
 
     cfg          = load_config()
     api_key      = cfg.get("TMDB", {}).get("TMDB_API_KEY", "")
@@ -498,7 +499,7 @@ def import_watchlist(payload: dict = Body(...)):
 
     raw = _fetch_letterboxd_rss(url, flaresolverr=flaresolverr)
     if not raw:
-        return {"ok": False, "error": "No movies found — check the URL is a public Letterboxd list or watchlist"}
+        return {"ok": False, "error": tr("No movies found — check the URL is a public Letterboxd list or watchlist")}
 
     ov       = load_json(OVERRIDES_FILE)
     existing = set(ov.get("wishlist_movies", []))
@@ -541,7 +542,7 @@ def letterboxd_add_url(payload: dict = Body(...)):
     ov = load_json(OVERRIDES_FILE)
     ov.setdefault("letterboxd_urls", [])
     if len(ov["letterboxd_urls"]) >= 50:
-        return {"ok": False, "error": "Maximum 50 Letterboxd URLs allowed"}
+        return {"ok": False, "error": tr("Maximum 50 Letterboxd URLs allowed")}
     if url not in ov["letterboxd_urls"]:
         ov["letterboxd_urls"].append(url)
         save_json(OVERRIDES_FILE, ov)

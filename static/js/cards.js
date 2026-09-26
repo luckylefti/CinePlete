@@ -11,13 +11,13 @@ function posterCard(m, extraTag = "") {
 
   const _watched     = _traktWatchedIds?.has(tmdb)
   const watchedBadge = _watched
-    ? `<div class="watched-badge">👁 Watched</div>` : ""
+    ? `<div class="watched-badge">${t("👁 Watched")}</div>` : ""
   const watchedDim   = _watched ? " pc-watched" : ""
 
   const _inRadarr = _radarrLibTmdbIds?.has(tmdb)
   const radarrBtn = CONFIG?.RADARR?.RADARR_ENABLED
     ? (_inRadarr
-        ? `<button class="btn-sm btn-radarr" onclick="event.stopPropagation();searchInRadarr(${tmdb},'${safeName}',this)">⟳ Search</button>`
+        ? `<button class="btn-sm btn-radarr" onclick="event.stopPropagation();searchInRadarr(${tmdb},'${safeName}',this)">${t("⟳ Search")}</button>`
         : `<button class="btn-sm btn-radarr" onclick="event.stopPropagation();addToRadarr(${tmdb},'${safeName}',this)">+ Radarr</button>`)
     : ""
   const radarr4kBtn = CONFIG?.RADARR_4K?.RADARR_4K_ENABLED
@@ -25,17 +25,17 @@ function posterCard(m, extraTag = "") {
     : ""
   const overseerrBtn = CONFIG?.OVERSEERR?.OVERSEERR_ENABLED
     ? (overseerrRequested?.has(tmdb)
-        ? `<button class="btn-sm" style="color:var(--green)" disabled>✓ Requested</button>`
+        ? `<button class="btn-sm" style="color:var(--green)" disabled>${t("✓ Requested")}</button>`
         : `<button class="btn-sm btn-overseerr" onclick="event.stopPropagation();addToOverseerr(${tmdb},'${safeName}',this)">→ OS</button>`)
     : ""
   const jellyseerrBtn = CONFIG?.JELLYSEERR?.JELLYSEERR_ENABLED
     ? (jellyseerrRequested?.has(tmdb)
-        ? `<button class="btn-sm" style="color:var(--green)" disabled>✓ Requested</button>`
+        ? `<button class="btn-sm" style="color:var(--green)" disabled>${t("✓ Requested")}</button>`
         : `<button class="btn-sm btn-jellyseerr" onclick="event.stopPropagation();addToJellyseerr(${tmdb},'${safeName}',this)">→ JS</button>`)
     : ""
   const seerrBtn = CONFIG?.SEERR?.SEERR_ENABLED
     ? (seerrRequested?.has(tmdb)
-        ? `<button class="btn-sm" style="color:var(--green)" disabled>✓ Requested</button>`
+        ? `<button class="btn-sm" style="color:var(--green)" disabled>${t("✓ Requested")}</button>`
         : `<button class="btn-sm btn-seerr" onclick="event.stopPropagation();addToSeerr(${tmdb},'${safeName}',this)">→ Seerr</button>`)
     : ""
 
@@ -45,14 +45,14 @@ function posterCard(m, extraTag = "") {
     ? `<button class="btn-sm btn-wishlisted" data-movie="${movieData}" onclick="event.stopPropagation();removeWishlist(${tmdb},this)">★</button>`
     : `<button class="btn-sm btn-wishlist"   data-movie="${movieData}" onclick="event.stopPropagation();addWishlist(${tmdb},this)">☆</button>`
 
-  const ignoreBtn = `<button class="btn-sm btn-ignore" title="Don't want this"
+  const ignoreBtn = `<button class="btn-sm btn-ignore" title="${t("Don't want this")}"
     onclick="event.stopPropagation();ignoreMovie(${tmdb},'${safeName}',${m.year||"null"},'${m.poster||""}',this)">🚫</button>`
 
   const rating = parseFloat(m.rating || 0).toFixed(1)
 
   const imgHtml = m.poster
     ? `<img class="pc-img" src="${m.poster}" loading="lazy" alt=""/>`
-    : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>No Image</span></div>`
+    : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>${t("No Image")}</span></div>`
 
   const mSafe = JSON.stringify({ tmdb: m.tmdb, title: m.title, year: m.year, poster: m.poster, wishlist: m.wishlist })
     .replace(/'/g, "\\'")
@@ -63,10 +63,10 @@ function posterCard(m, extraTag = "") {
     <input type="checkbox" class="pc-check"
       data-movie="${mSafe.replace(/"/g,'&quot;')}"
       onclick="event.stopPropagation();toggleSelect(${tmdb},${mSafe.replace(/"/g,'&quot;')},this,event)"
-      title="Select"/>
+      title="${t("Select")}"/>
     ${imgHtml}
     <div class="pc-info">
-      <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||"Untitled")}</div>
+      <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||t("Untitled"))}</div>
       <div class="pc-meta">
         <span class="pc-rating">⭐ ${rating}</span>
         ${m.year ? `<span>${m.year}</span>` : ""}
@@ -74,7 +74,7 @@ function posterCard(m, extraTag = "") {
       </div>
     </div>
     <div class="pc-overlay">
-      <div class="pc-overlay-title">${escHtml(m.title||"Untitled")}</div>
+      <div class="pc-overlay-title">${escHtml(m.title||t("Untitled"))}</div>
       <div class="pc-overlay-actions">${wBtn}${radarrBtn}${radarr4kBtn}${overseerrBtn}${jellyseerrBtn}${seerrBtn}${ignoreBtn}</div>
     </div>
   </div>`
@@ -85,7 +85,7 @@ function posterCard(m, extraTag = "") {
 function movieCard(m, extraTag = ""){
   const poster = m.poster
     ? `<img class="movie-poster" src="${m.poster}" loading="lazy" alt=""/>`
-    : `<div class="movie-poster-placeholder">NO<br>IMG</div>`
+    : `<div class="movie-poster-placeholder">${t("NO<br>IMG")}</div>`
 
   const radarrBtn = CONFIG?.RADARR?.RADARR_ENABLED
     ? `<button class="btn-sm btn-radarr" onclick="addToRadarr(${m.tmdb},'${(m.title||'').replace(/'/g,"\\'")}',this)">+ Radarr</button>`
@@ -93,8 +93,8 @@ function movieCard(m, extraTag = ""){
 
   const _mData = JSON.stringify({tmdb:m.tmdb,title:m.title,year:m.year,poster:m.poster,rating:m.rating,wishlist:m.wishlist}).replace(/"/g,'&quot;')
   const wBtn = m.wishlist
-    ? `<button class="btn-sm btn-wishlisted" data-movie="${_mData}" onclick="removeWishlist(${m.tmdb},this)">★ Wishlisted</button>`
-    : `<button class="btn-sm btn-wishlist"   data-movie="${_mData}" onclick="addWishlist(${m.tmdb},this)">☆ Wishlist</button>`
+    ? `<button class="btn-sm btn-wishlisted" data-movie="${_mData}" onclick="removeWishlist(${m.tmdb},this)">${t("★ Wishlisted")}</button>`
+    : `<button class="btn-sm btn-wishlist"   data-movie="${_mData}" onclick="addWishlist(${m.tmdb},this)">${t("☆ Wishlist")}</button>`
 
   const rating = parseFloat(m.rating||0).toFixed(1)
   const pop    = Math.round(m.popularity||0)
@@ -104,10 +104,10 @@ function movieCard(m, extraTag = ""){
     <div class="movie-card-inner">
       ${poster}
       <div class="movie-body">
-        <div class="movie-title">${escHtml(m.title||"Untitled")} <span class="movie-year">${m.year?`(${m.year})`:""}</span></div>
+        <div class="movie-title">${escHtml(m.title||t("Untitled"))} <span class="movie-year">${m.year?`(${m.year})`:""}</span></div>
         <div class="movie-meta">
           ${tag(`⭐ ${rating}`,"tag-gold")}
-          ${m.votes ? tag(`${(m.votes/1000).toFixed(0)}k votes`) : ""}
+          ${m.votes ? tag(t("{n}k votes", {n: (m.votes/1000).toFixed(0)})) : ""}
           ${pop ? tag(`↑${pop}`) : ""}
           ${extraTag}
         </div>
@@ -134,7 +134,7 @@ function lbPosterCard(m) {
   const _lbData = JSON.stringify({tmdb:m.tmdb,title:m.title,year:m.year,poster:m.poster,rating:m.rating,wishlist:m.wishlist}).replace(/"/g,'&quot;')
   const wBtn = m.wishlist
     ? `<button class="btn-sm btn-wishlisted" data-movie="${_lbData}" onclick="event.stopPropagation();removeWishlist(${tmdb},this)">★</button>`
-    : `<button class="btn-sm btn-wishlist"   data-movie="${_lbData}" onclick="event.stopPropagation();addWishlist(${tmdb},this)">☆ Wishlist</button>`
+    : `<button class="btn-sm btn-wishlist"   data-movie="${_lbData}" onclick="event.stopPropagation();addWishlist(${tmdb},this)">${t("☆ Wishlist")}</button>`
 
   const radarrBtn = CONFIG?.RADARR?.RADARR_ENABLED
     ? `<button class="btn-sm btn-radarr" onclick="event.stopPropagation();addToRadarr(${tmdb},'${safeName}',this)">+ Radarr</button>`
@@ -143,7 +143,7 @@ function lbPosterCard(m) {
   const rating  = parseFloat(m.rating || 0).toFixed(1)
   const imgHtml = m.poster
     ? `<img class="pc-img" src="${m.poster}" loading="lazy" alt=""/>`
-    : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>No Image</span></div>`
+    : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>${t("No Image")}</span></div>`
 
   const mSafe = JSON.stringify({ tmdb: m.tmdb, title: m.title, year: m.year, poster: m.poster, wishlist: m.wishlist })
     .replace(/'/g, "\\'")
@@ -155,17 +155,17 @@ function lbPosterCard(m) {
     <input type="checkbox" class="pc-check"
       data-movie="${mSafe.replace(/"/g,'&quot;')}"
       onclick="event.stopPropagation();toggleSelect(${tmdb},${mSafe.replace(/"/g,'&quot;')},this,event)"
-      title="Select"/>
+      title="${t("Select")}"/>
     ${imgHtml}
     <div class="pc-info">
-      <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||"Untitled")}</div>
+      <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||t("Untitled"))}</div>
       <div class="pc-meta">
         <span class="pc-rating">⭐ ${rating}</span>
         ${m.year ? `<span>${m.year}</span>` : ""}
       </div>
     </div>
     <div class="pc-overlay">
-      <div class="pc-overlay-title">${escHtml(m.title||"Untitled")}</div>
+      <div class="pc-overlay-title">${escHtml(m.title||t("Untitled"))}</div>
       <div class="pc-overlay-actions">${wBtn}${radarrBtn}</div>
     </div>
   </div>`
@@ -181,7 +181,7 @@ function suggestionCard(m) {
 
   const _watched2     = _traktWatchedIds?.has(tmdb)
   const watchedBadge2 = _watched2
-    ? `<div class="watched-badge">👁 Watched</div>` : ""
+    ? `<div class="watched-badge">${t("👁 Watched")}</div>` : ""
   const watchedDim2   = _watched2 ? " pc-watched" : ""
 
   const scoreBadge = score
@@ -195,7 +195,7 @@ function suggestionCard(m) {
   const _inRadarr2  = _radarrLibTmdbIds?.has(tmdb)
   const radarrBtn   = CONFIG?.RADARR?.RADARR_ENABLED
     ? (_inRadarr2
-        ? `<button class="btn-sm btn-radarr" onclick="event.stopPropagation();searchInRadarr(${tmdb},'${safeName}',this)">⟳ Search</button>`
+        ? `<button class="btn-sm btn-radarr" onclick="event.stopPropagation();searchInRadarr(${tmdb},'${safeName}',this)">${t("⟳ Search")}</button>`
         : `<button class="btn-sm btn-radarr" onclick="event.stopPropagation();addToRadarr(${tmdb},'${safeName}',this)">+ Radarr</button>`)
     : ""
   const radarr4kBtn = CONFIG?.RADARR_4K?.RADARR_4K_ENABLED
@@ -203,17 +203,17 @@ function suggestionCard(m) {
     : ""
   const overseerrBtn  = CONFIG?.OVERSEERR?.OVERSEERR_ENABLED
     ? (overseerrRequested?.has(tmdb)
-        ? `<button class="btn-sm" style="color:var(--green)" disabled>✓ Requested</button>`
+        ? `<button class="btn-sm" style="color:var(--green)" disabled>${t("✓ Requested")}</button>`
         : `<button class="btn-sm btn-overseerr" onclick="event.stopPropagation();addToOverseerr(${tmdb},'${safeName}',this)">→ OS</button>`)
     : ""
   const jellyseerrBtn = CONFIG?.JELLYSEERR?.JELLYSEERR_ENABLED
     ? (jellyseerrRequested?.has(tmdb)
-        ? `<button class="btn-sm" style="color:var(--green)" disabled>✓ Requested</button>`
+        ? `<button class="btn-sm" style="color:var(--green)" disabled>${t("✓ Requested")}</button>`
         : `<button class="btn-sm btn-jellyseerr" onclick="event.stopPropagation();addToJellyseerr(${tmdb},'${safeName}',this)">→ JS</button>`)
     : ""
   const seerrBtn2 = CONFIG?.SEERR?.SEERR_ENABLED
     ? (seerrRequested?.has(tmdb)
-        ? `<button class="btn-sm" style="color:var(--green)" disabled>✓ Requested</button>`
+        ? `<button class="btn-sm" style="color:var(--green)" disabled>${t("✓ Requested")}</button>`
         : `<button class="btn-sm btn-seerr" onclick="event.stopPropagation();addToSeerr(${tmdb},'${safeName}',this)">→ Seerr</button>`)
     : ""
 
@@ -221,37 +221,37 @@ function suggestionCard(m) {
   const wBtn = m.wishlist
     ? `<button class="btn-sm btn-wishlisted" data-movie="${movieData}" onclick="event.stopPropagation();removeWishlist(${tmdb},this)">★</button>`
     : `<button class="btn-sm btn-wishlist"   data-movie="${movieData}" onclick="event.stopPropagation();addWishlist(${tmdb},this)">☆</button>`
-  const ignoreBtn = `<button class="btn-sm btn-ignore" title="Don't want this"
+  const ignoreBtn = `<button class="btn-sm btn-ignore" title="${t("Don't want this")}"
     onclick="event.stopPropagation();ignoreMovie(${tmdb},'${safeName}',${m.year||"null"},'${m.poster||""}',this)">🚫</button>`
 
   const rating  = parseFloat(m.rating || 0).toFixed(1)
   const imgHtml = m.poster
     ? `<img class="pc-img" src="${m.poster}" loading="lazy" alt=""/>`
-    : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>No Image</span></div>`
+    : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>${t("No Image")}</span></div>`
 
   const mSafe = JSON.stringify({ tmdb: m.tmdb, title: m.title, year: m.year, poster: m.poster, wishlist: m.wishlist })
     .replace(/'/g, "\\'")
 
   return `
   <div class="pc${watchedDim2}" data-tmdb="${tmdb}"
-    ${sources.length ? `title="From: ${escHtml(sources.join(', '))}"` : ''}
+    ${sources.length ? `title="${escHtml(t("From: {sources}", {sources: sources.join(', ')}))}"` : ''}
     onclick="openMovieModal(${tmdb},${mSafe.replace(/"/g,'&quot;')})">
     ${watchedBadge2}
     ${scoreBadge}
     <input type="checkbox" class="pc-check"
       data-movie="${mSafe.replace(/"/g,'&quot;')}"
       onclick="event.stopPropagation();toggleSelect(${tmdb},${mSafe.replace(/"/g,'&quot;')},this,event)"
-      title="Select"/>
+      title="${t("Select")}"/>
     ${imgHtml}
     <div class="pc-info">
-      <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||"Untitled")}</div>
+      <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||t("Untitled"))}</div>
       <div class="pc-meta">
         <span class="pc-rating">⭐ ${rating}</span>
         ${m.year ? `<span>${m.year}</span>` : ""}
       </div>
     </div>
     <div class="pc-overlay">
-      <div class="pc-overlay-title">${escHtml(m.title||"Untitled")}</div>
+      <div class="pc-overlay-title">${escHtml(m.title||t("Untitled"))}</div>
       <div class="pc-overlay-actions">${wBtn}${radarrBtn}${radarr4kBtn}${overseerrBtn}${jellyseerrBtn}${seerrBtn2}${ignoreBtn}</div>
     </div>
   </div>`
@@ -267,7 +267,7 @@ function upgradeCard(m, qualityBadge = "") {
   const radarr4kBtn = CONFIG?.RADARR_4K?.RADARR_4K_ENABLED
     ? `<button class="btn-sm btn-radarr" style="opacity:.9"
          onclick="event.stopPropagation();upgradeToRadarr4k(${tmdb},'${safeName}',this)">→ 4K</button>`
-    : `<span style="font-size:.65rem;color:var(--text3)">Enable Radarr 4K</span>`
+    : `<span style="font-size:.65rem;color:var(--text3)">${t("Enable Radarr 4K")}</span>`
 
   const movieData = JSON.stringify({tmdb:m.tmdb,title:m.title,year:m.year,poster:m.poster,rating:m.rating,wishlist:m.wishlist}).replace(/"/g,'&quot;')
   const wBtn = m.wishlist
@@ -276,7 +276,7 @@ function upgradeCard(m, qualityBadge = "") {
 
   const imgHtml = m.poster
     ? `<img class="pc-img" src="${m.poster}" loading="lazy" alt=""/>`
-    : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>No Image</span></div>`
+    : `<div class="pc-no-img"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20"/></svg><span>${t("No Image")}</span></div>`
 
   const mSafe = JSON.stringify({ tmdb: m.tmdb, title: m.title, year: m.year, poster: m.poster, wishlist: m.wishlist })
     .replace(/'/g, "\\'")
@@ -296,10 +296,10 @@ function upgradeCard(m, qualityBadge = "") {
     <input type="checkbox" class="pc-check"
       data-movie="${mSafe.replace(/"/g,'&quot;')}"
       onclick="event.stopPropagation();toggleSelect(${tmdb},${mSafe.replace(/"/g,'&quot;')},this,event)"
-      title="Select"/>
+      title="${t("Select")}"/>
     ${imgHtml}
     <div class="pc-info">
-      <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||"Untitled")}</div>
+      <div class="pc-title" title="${escHtml(m.title||"")}">${escHtml(m.title||t("Untitled"))}</div>
       <div class="pc-meta">
         <span class="pc-rating">⭐ ${rating}</span>
         ${m.year ? `<span>${m.year}</span>` : ""}
@@ -307,7 +307,7 @@ function upgradeCard(m, qualityBadge = "") {
       </div>
     </div>
     <div class="pc-overlay">
-      <div class="pc-overlay-title">${escHtml(m.title||"Untitled")}</div>
+      <div class="pc-overlay-title">${escHtml(m.title||t("Untitled"))}</div>
       <div class="pc-overlay-actions">${wBtn}${radarr4kBtn}</div>
     </div>
   </div>`
@@ -319,6 +319,6 @@ function emptyStateHTML(msg){
   return `<div class="empty-state">
     <div class="empty-icon">🎬</div>
     <div class="empty-title">${msg}</div>
-    <div class="empty-sub">Nothing to show here.</div>
+    <div class="empty-sub">${t("Nothing to show here.")}</div>
   </div>`
 }

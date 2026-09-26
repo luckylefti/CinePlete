@@ -90,6 +90,14 @@ Both scanners return identical tuple structure:
 - `static/index.html` - Single-page app shell with inline CSS
 - `static/app.js` - All UI logic (routing, rendering, API calls, Chart.js integration)
 
+### Translation (i18n)
+
+- **Frontend:** `static/js/i18n.js` loads first and defines `t("English text", {vars})` / `tn(n, one, many)`. The English source string *is* the key; a missing entry falls back to English. German lives in `static/js/i18n.de.js` (a pure JSON object — `tests/test_i18n.py` parses it). Static HTML (`index.html`, `login.html`) is translated by `translateDom()` on exact text matches, so markup there needs no attributes.
+- **Language selection:** `SERVER.UI_LANGUAGE` (`en`/`de`) is injected server-side into `<html lang="__LANG__">` by `_inject()` in `app/routers/auth.py`; the page reloads after a language change is saved.
+- **Backend:** `app/i18n.py` — `tr("English text", n=…)` for user-facing strings (scan steps, API errors shown as toasts, Telegram). Log lines stay English. `app/config.py` must import it locally (circular import).
+- **TMDB:** `TMDB.TMDB_LANGUAGE` — `TMDB.get()` appends `&language=` centrally (`_localize`). `en-US` leaves URLs and cache keys unchanged.
+- **Rules:** keys only as double-quoted literals (`t("Save")`, never template literals), German text without `"` (use „…“). `tests/test_i18n.py` fails on any `t()`/`tr()` key without a German entry.
+
 ### Data Flow
 
 ```

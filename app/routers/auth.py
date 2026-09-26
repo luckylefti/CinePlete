@@ -15,6 +15,7 @@ from fastapi import APIRouter, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.config import load_config
+from app.i18n import tr, ui_language
 from app.auth import (
     COOKIE_NAME, get_client_ip, is_local_address,
     hash_password, verify_password,
@@ -42,13 +43,19 @@ def index():
         html = f.read()
     # Inject version into script URLs for automatic browser cache-busting
     # on every new deployment (browsers re-fetch JS when ?v= changes)
-    return html.replace("__VERSION__", APP_VERSION)
+    return _inject(html)
 
 
 @router.get("/login", response_class=HTMLResponse)
 def login_page():
     with open(f"{STATIC_DIR}/login.html", "r", encoding="utf-8") as f:
-        return f.read()
+        return _inject(f.read())
+
+
+def _inject(html: str) -> str:
+    """Fill the __VERSION__ / __LANG__ placeholders (lang drives static/js/i18n.js)."""
+    return (html.replace("__VERSION__", APP_VERSION)
+                .replace("__LANG__", ui_language()))
 
 
 # --------------------------------------------------
@@ -92,14 +99,14 @@ async def api_auth_login(request: Request, response: Response):
     secret      = auth_cfg.get("AUTH_SECRET_KEY", "")
 
     if not stored_user or not stored_hash:
-        return {"ok": False, "error": "No user configured — set credentials in Config first"}
+        return {"ok": False, "error": tr("No user configured — set credentials in Config first")}
 
     if not secret:
-        return {"ok": False, "error": "Auth not fully configured (missing secret key)"}
+        return {"ok": False, "error": tr("Auth not fully configured (missing secret key)")}
 
     if username != stored_user or not verify_password(password, stored_hash, stored_salt):
         log.warning(f"Auth failed for '{username}' from {get_client_ip(request)}")
-        return {"ok": False, "error": "Invalid username or password"}
+        return {"ok": False, "error": tr("Invalid username or password")}
 
     token   = create_token(username, remember_me, secret)
     max_age = 30 * 86_400 if remember_me else 86_400

@@ -11,6 +11,7 @@ from fastapi import APIRouter, Body
 from app.config import load_config, save_config
 from app.auth import generate_api_key, hash_api_key, key_preview
 from app.routers._shared import log
+from app.i18n import tr
 
 router = APIRouter()
 
@@ -49,7 +50,7 @@ def create_api_key(payload: dict = Body(...)):
     keys = cfg.get("API_KEYS", [])
 
     if len(keys) >= _KEY_LIMIT:
-        return {"ok": False, "error": f"Maximum of {_KEY_LIMIT} API keys reached"}
+        return {"ok": False, "error": tr("Maximum of {n} API keys reached", n=_KEY_LIMIT)}
 
     raw     = generate_api_key()
     preview = key_preview(raw)
@@ -83,7 +84,7 @@ def revoke_api_key(key_id: str):
     before = len(keys)
     keys   = [k for k in keys if k["id"] != key_id]
     if len(keys) == before:
-        return {"ok": False, "error": "Key not found"}
+        return {"ok": False, "error": tr("Key not found")}
 
     cfg["API_KEYS"] = keys
     save_config(cfg)

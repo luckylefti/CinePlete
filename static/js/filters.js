@@ -42,7 +42,13 @@ function navigateToSuggestions({ genreId = "", year = "" } = {}) {
   }
 }
 
-/* Static TMDB genre ID map — stable, no API call needed */
+/* Static TMDB genre ID map — stable, no API call needed.
+   The English names are the i18n keys: display them via genreLabel(id), never
+   compare them — the numeric ID is the filter value.
+   i18n keys (all GENRE_MAP values): t("Action") t("Adventure") t("Animation")
+   t("Comedy") t("Crime") t("Documentary") t("Drama") t("Family") t("Fantasy")
+   t("History") t("Horror") t("Music") t("Mystery") t("Romance") t("Sci-Fi")
+   t("Thriller") t("War") t("Western") */
 const GENRE_MAP = {
   28:"Action", 12:"Adventure", 16:"Animation", 35:"Comedy",
   80:"Crime", 99:"Documentary", 18:"Drama", 10751:"Family",
@@ -50,6 +56,9 @@ const GENRE_MAP = {
   9648:"Mystery", 10749:"Romance", 878:"Sci-Fi", 53:"Thriller",
   10752:"War", 37:"Western"
 }
+
+/* Display name of a TMDB genre ID (translated; key = GENRE_MAP value above) */
+function genreLabel(id) { return GENRE_MAP[id] ? t(GENRE_MAP[id]) : "" }
 
 function getGenreFilter() { return _activeGenreFilter }
 
@@ -187,7 +196,7 @@ function updateFilterBar(){
 
     bar.innerHTML = `
       <div style="position:relative" id="groupFilterWrap">
-        <input id="groupFilterSearch" placeholder="Filter ${ACTIVE_TAB}… (A→Z)"
+        <input id="groupFilterSearch" placeholder="${escHtml(_groupFilterPlaceholder(ACTIVE_TAB))}"
           value="${prevGroup}" autocomplete="off"
           style="min-width:200px;background:var(--bg3);border:1px solid var(--border2);
                  border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;
@@ -202,8 +211,8 @@ function updateFilterBar(){
         </div>
       </div>
       <select id="genreFilter">
-        <option value="">All genres</option>
-        ${Object.entries(GENRE_MAP).map(([id,name])=>`<option value="${id}"${prevGenreG===id?" selected":""}>${name}</option>`).join("")}
+        <option value="">${t("All genres")}</option>
+        ${Object.entries(GENRE_MAP).map(([id,name])=>`<option value="${id}"${prevGenreG===id?" selected":""}>${escHtml(t(name))}</option>`).join("")}
       </select>
       ${_ratingSliderHtml(_activeRatingFilter)}
       ${sortSelect(prevSort)}`
@@ -215,16 +224,16 @@ function updateFilterBar(){
     const prevYear   = document.getElementById("yearFilter")?.value || ""
     const prevSort   = document.getElementById("sort")?.value || "popularity"
     const prevGenre  = _activeGenreFilter
-    const yearOpts   = [["","All years"],["2020s","2020s"],["2010s","2010s"],["2000s","2000s"],["1990s","1990s"],["older","Older"]]
+    const yearOpts   = [["",t("All years")],["2020s","2020s"],["2010s","2010s"],["2000s","2000s"],["1990s","1990s"],["older",t("Older")]]
 
     bar.innerHTML = `
-      <input id="search" placeholder="Search…" value="${escHtml(prevSearch)}"/>
+      <input id="search" placeholder="${t("Search…")}" value="${escHtml(prevSearch)}"/>
       <select id="yearFilter">
         ${yearOpts.map(([v,l])=>`<option value="${v}"${prevYear===v?" selected":""}>${l}</option>`).join("")}
       </select>
       <select id="genreFilter">
-        <option value="">All genres</option>
-        ${Object.entries(GENRE_MAP).map(([id,name])=>`<option value="${id}"${prevGenre===id?" selected":""}>${name}</option>`).join("")}
+        <option value="">${t("All genres")}</option>
+        ${Object.entries(GENRE_MAP).map(([id,name])=>`<option value="${id}"${prevGenre===id?" selected":""}>${escHtml(t(name))}</option>`).join("")}
       </select>
       ${_ratingSliderHtml(_activeRatingFilter)}
       ${sortSelect(prevSort)}`
@@ -242,12 +251,12 @@ function getRatingFilter() { return _activeRatingFilter }
 function onRatingFilterChange(val) {
   _activeRatingFilter = parseFloat(val) || 0
   const lbl = document.getElementById("ratingFilterLabel")
-  if (lbl) lbl.textContent = _activeRatingFilter > 0 ? `≥ ${_activeRatingFilter.toFixed(1)} ⭐` : "Any ⭐"
+  if (lbl) lbl.textContent = _activeRatingFilter > 0 ? `≥ ${_activeRatingFilter.toFixed(1)} ⭐` : t("Any ⭐")
   render()
 }
 
 function _ratingSliderHtml(cur) {
-  const label = cur > 0 ? `≥ ${parseFloat(cur).toFixed(1)} ⭐` : "Any ⭐"
+  const label = cur > 0 ? `≥ ${parseFloat(cur).toFixed(1)} ⭐` : t("Any ⭐")
   return `<div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
     <input type="range" id="ratingFilter" min="0" max="10" step="0.5" value="${cur}"
       style="width:90px;accent-color:var(--gold);cursor:pointer;touch-action:none"
@@ -257,10 +266,18 @@ function _ratingSliderHtml(cur) {
 }
 
 function sortSelect(cur){
-  const opts = [["popularity","Popularity"],["matches","Matches"],["rating","Rating"],["votes","Votes"],["year","Year"],["title","Title"]]
+  const opts = [["popularity",t("Popularity")],["matches",t("Matches")],["rating",t("Rating")],["votes",t("Votes")],["year",t("Year")],["title",t("Title")]]
   return `<select id="sort">
     ${opts.map(([v,l])=>`<option value="${v}"${cur===v?" selected":""}>${l}</option>`).join("")}
   </select>`
+}
+
+/* Placeholder of the group search box — one literal per grouped tab */
+function _groupFilterPlaceholder(tab){
+  if (tab==="franchises") return t("Filter franchises… (A→Z)")
+  if (tab==="directors")  return t("Filter directors… (A→Z)")
+  if (tab==="actors")     return t("Filter actors… (A→Z)")
+  return `Filter ${tab}… (A→Z)`
 }
 
 function getGroupsForTab(tab){

@@ -74,7 +74,7 @@ async function openMovieModal(tmdb, fallback = {}) {
     posterPH.style.display = "flex"
   }
 
-  const runtime = md.runtime ? `${md.runtime}m` : ""
+  const runtime = md.runtime ? t("{n}m", {n: md.runtime}) : ""
   const year    = md.year    ? `(${md.year})`    : ""
 
   const genresHtml = (md.genres || []).map(g =>
@@ -84,14 +84,14 @@ async function openMovieModal(tmdb, fallback = {}) {
   const statsHtml = `
     <div class="modal-stats">
       ${md.rating ? `<span>⭐ <strong>${parseFloat(md.rating).toFixed(1)}</strong></span>` : ""}
-      ${md.votes  ? `<span><strong>${(md.votes/1000).toFixed(0)}k</strong> votes</span>` : ""}
+      ${md.votes  ? `<span><strong>${(md.votes/1000).toFixed(0)}k</strong> ${t("votes")}</span>` : ""}
       ${runtime   ? `<span>🕐 <strong>${runtime}</strong></span>`  : ""}
       ${md.year   ? `<span>📅 <strong>${md.year}</strong></span>` : ""}
     </div>`
 
   const castHtml = (md.cast || []).length ? `
     <div>
-      <div style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.5rem">Cast</div>
+      <div style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.5rem">${t("Cast")}</div>
       <div class="modal-cast">
         ${(md.cast || []).map(c => `
           <div class="cast-card">
@@ -135,12 +135,12 @@ async function openMovieModal(tmdb, fallback = {}) {
 
   const wInWishlist = fallback.wishlist
   const wBtn = wInWishlist
-    ? `<button class="btn-sm btn-wishlisted" id="modal-wbtn" onclick="modalRemoveWishlist(${tmdb})">★ Wishlisted</button>`
-    : `<button class="btn-sm btn-wishlist"   id="modal-wbtn" onclick="modalAddWishlist(${tmdb})">☆ Wishlist</button>`
+    ? `<button class="btn-sm btn-wishlisted" id="modal-wbtn" onclick="modalRemoveWishlist(${tmdb})">${t("★ Wishlisted")}</button>`
+    : `<button class="btn-sm btn-wishlist"   id="modal-wbtn" onclick="modalAddWishlist(${tmdb})">${t("☆ Wishlist")}</button>`
 
   info.innerHTML = `
     <div>
-      <div id="movieModalTitle">${escHtml(md.title || fallback.title || "Unknown")}</div>
+      <div id="movieModalTitle">${escHtml(md.title || fallback.title || t("Unknown"))}</div>
       ${md.tagline ? `<div id="movieModalTagline">${escHtml(md.tagline)}</div>` : ""}
     </div>
     ${genresHtml ? `<div class="modal-genres">${genresHtml}</div>` : ""}
@@ -179,7 +179,7 @@ async function _loadStreamingProviders(tmdb) {
     if (!_modalOpen || document.getElementById("streamingSection") !== el) return
     if (!res.ok || !res.providers?.length) return
 
-    const TYPE_LABEL = { flatrate: "Stream", free: "Free", rent: "Rent", buy: "Buy" }
+    const TYPE_LABEL = { flatrate: t("Stream"), free: t("Free"), rent: t("Rent"), buy: t("Buy") }
     const byType = {}
     for (const p of res.providers) {
       ;(byType[p.type] = byType[p.type] || []).push(p)
@@ -210,7 +210,7 @@ async function _loadStreamingProviders(tmdb) {
       <div style="margin-top:.75rem;padding:.6rem .75rem;background:var(--bg3);
                   border:1px solid var(--border2);border-radius:8px;
                   display:flex;align-items:center;flex-wrap:wrap;gap:.4rem">
-        <span style="font-size:.72rem;font-weight:600;color:var(--text2);margin-right:.2rem">📺 Where to watch:</span>
+        <span style="font-size:.72rem;font-weight:600;color:var(--text2);margin-right:.2rem">${t("📺 Where to watch:")}</span>
         ${sections}${link}
       </div>`
   } catch {}
@@ -260,10 +260,10 @@ async function modalAddWishlist(tmdb) {
   const btn = document.getElementById("modal-wbtn")
   if (btn) {
     btn.className   = "btn-sm btn-wishlisted"
-    btn.textContent = "★ Wishlisted"
+    btn.textContent = t("★ Wishlisted")
     btn.onclick     = () => modalRemoveWishlist(tmdb)
   }
-  toast("Added to Wishlist", "gold")
+  toast(t("Added to Wishlist"), "gold")
   // Reflect in DATA so Wishlist tab shows the movie without rescan
   if (_modalMovie?.tmdb) {
     if (!DATA.wishlist) DATA.wishlist = []
@@ -278,10 +278,10 @@ async function modalRemoveWishlist(tmdb) {
   const btn = document.getElementById("modal-wbtn")
   if (btn) {
     btn.className   = "btn-sm btn-wishlist"
-    btn.textContent = "☆ Wishlist"
+    btn.textContent = t("☆ Wishlist")
     btn.onclick     = () => modalAddWishlist(tmdb)
   }
-  toast("Removed from Wishlist")
+  toast(t("Removed from Wishlist"))
   // Reflect in DATA immediately
   DATA.wishlist = (DATA.wishlist || []).filter(w => w.tmdb !== tmdb)
   updateBadges()

@@ -12,6 +12,7 @@ from datetime import datetime
 from fastapi import APIRouter
 
 from app.routers._shared import log, DATA_DIR
+from app.i18n import tr
 
 router = APIRouter()
 
@@ -37,7 +38,7 @@ def api_cache_backup():
     backup_file = f"{DATA_DIR}/tmdb_cache.backup.json"
     try:
         if not os.path.exists(cache_file):
-            return {"ok": False, "error": "No cache file to back up"}
+            return {"ok": False, "error": tr("No cache file to back up")}
         shutil.copy2(cache_file, backup_file)
         stat    = os.stat(backup_file)
         size_mb = round(stat.st_size / 1024 / 1024, 1)
@@ -56,7 +57,7 @@ def api_cache_restore():
     backup_file = f"{DATA_DIR}/tmdb_cache.backup.json"
     try:
         if not os.path.exists(backup_file):
-            return {"ok": False, "error": "No backup file found"}
+            return {"ok": False, "error": tr("No backup file found")}
         shutil.copy2(backup_file, cache_file)
         stat    = os.stat(cache_file)
         size_mb = round(stat.st_size / 1024 / 1024, 1)

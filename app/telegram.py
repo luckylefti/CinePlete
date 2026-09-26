@@ -13,6 +13,7 @@ import requests
 
 from app.config import load_config
 from app.logger import get_logger
+from app.i18n import tr, ui_language
 
 log        = get_logger(__name__)
 DATA_DIR   = "/data"
@@ -105,20 +106,22 @@ def send_scan_summary(results: dict, duration_s: int | None = None):
             m, s = divmod(duration_s, 60)
             dur_str = f"{m}m {s}s" if s else f"{m}m"
 
+    lang  = ui_language(cfg)
     lines = [
-        "🎬 *Cineplete Scan Complete*",
+        tr("🎬 *Cineplete Scan Complete*", lang=lang),
         "",
-        f"📚 Library: {lib_count} movies" + (f"  ·  ⏱ {dur_str}" if dur_str else ""),
-        f"🎯 Global Score: *{global_score}%*",
+        tr("📚 Library: {n} movies", lang=lang, n=lib_count) + (f"  ·  ⏱ {dur_str}" if dur_str else ""),
+        tr("🎯 Global Score: *{score}%*", lang=lang, score=global_score),
         "",
-        f"🔴 Franchises missing: {franchise_missing}",
-        f"🎭 Directors missing: {director_missing}",
-        f"⭐ Classics missing: {classics_missing}",
-        f"💡 Suggestions: {suggestions_count}",
+        tr("🔴 Franchises missing: {n}", lang=lang, n=franchise_missing),
+        tr("🎭 Directors missing: {n}", lang=lang, n=director_missing),
+        tr("⭐ Classics missing: {n}", lang=lang, n=classics_missing),
+        tr("💡 Suggestions: {n}", lang=lang, n=suggestions_count),
     ]
 
     if no_guid or no_match:
-        lines += ["", f"⚠️ Metadata issues: {no_guid} no GUID · {no_match} no match"]
+        lines += ["", tr("⚠️ Metadata issues: {no_guid} no GUID · {no_match} no match",
+                         lang=lang, no_guid=no_guid, no_match=no_match)]
 
     text = "\n".join(lines)
 
@@ -141,7 +144,7 @@ def send_radarr_grab(title: str, year: str | None = None) -> None:
     if not token or not chat_id:
         return
     year_str = f" ({year})" if year else ""
-    text     = f"⬇️ *Radarr grabbed:* {title}{year_str}"
+    text     = tr("⬇️ *Radarr grabbed:* {title}", lang=ui_language(cfg), title=f"{title}{year_str}")
     if _send(token, chat_id, text):
         log.info(f"Telegram grab notification sent: {title}")
         time.sleep(1.1)   # respect Telegram rate limit (1 msg/sec for private chats)
@@ -165,6 +168,7 @@ def send_radarr_grab_batch(movies: list[tuple[str, str | None]]) -> None:
     for title, year in movies:
         year_str = f" ({year})" if year else ""
         lines.append(f"• {title}{year_str}")
-    text = f"⬇️ *Radarr grabbed {len(movies)} wishlist movies:*\n" + "\n".join(lines)
+    text = (tr("⬇️ *Radarr grabbed {n} wishlist movies:*", lang=ui_language(cfg), n=len(movies))
+            + "\n" + "\n".join(lines))
     if _send(token, chat_id, text):
         log.info(f"Telegram batch grab notification sent: {len(movies)} movies")

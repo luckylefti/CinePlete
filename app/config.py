@@ -16,6 +16,7 @@ DEFAULT_CONFIG = {
         "UI_PORT": 8787,
         "TZ": "Asia/Jerusalem",
         "MEDIA_SERVER": "plex",   # "plex" | "jellyfin" | "emby"
+        "UI_LANGUAGE": "en",      # "en" | "de" — see app/i18n.py SUPPORTED_UI_LANGUAGES
     },
     "EMBY": {
         "EMBY_URL": "",
@@ -42,6 +43,9 @@ DEFAULT_CONFIG = {
         "TMDB_API_KEY": "",
         "TMDB_MIN_DELAY": 0.02,
         "TMDB_WORKERS": 6,       # concurrent workers for TMDB calls (1-10)
+        # ISO 639-1 + region, e.g. "de-DE" — titles, overviews, collection names.
+        # "en-US" is TMDB's own default and keeps existing cache entries valid.
+        "TMDB_LANGUAGE": "en-US",
     },
     "CLASSICS": {
         "CLASSICS_PAGES": 4,
@@ -250,12 +254,17 @@ def save_config(data: dict) -> dict:
 
 def config_issues(cfg: dict | None = None) -> list[str]:
     """Return a list of human-readable setup problems (empty = fully configured)."""
+    # Local import: app.i18n imports this module (load_config) — a module-level
+    # import here would be circular.
+    from app.i18n import tr, ui_language
+
     cfg  = cfg or load_config()
+    lang = ui_language(cfg)
     issues: list[str] = []
 
     tmdb = cfg.get("TMDB", {})
     if not str(tmdb.get("TMDB_API_KEY", "")).strip():
-        issues.append("TMDB API key is missing.")
+        issues.append(tr("TMDB API key is missing.", lang=lang))
 
     libraries = cfg.get("LIBRARIES", [])
     enabled   = [l for l in libraries if l.get("enabled")]
@@ -266,19 +275,19 @@ def config_issues(cfg: dict | None = None) -> list[str]:
         if media_server == "jellyfin":
             jf = cfg.get("JELLYFIN", {})
             if not str(jf.get("JELLYFIN_URL", "")).strip():
-                issues.append("Jellyfin URL is missing.")
+                issues.append(tr("Jellyfin URL is missing.", lang=lang))
             if not str(jf.get("JELLYFIN_API_KEY", "")).strip():
-                issues.append("Jellyfin API key is missing.")
+                issues.append(tr("Jellyfin API key is missing.", lang=lang))
             if not str(jf.get("JELLYFIN_LIBRARY_NAME", "")).strip():
-                issues.append("Jellyfin library name is missing.")
+                issues.append(tr("Jellyfin library name is missing.", lang=lang))
         else:
             plex = cfg.get("PLEX", {})
             if not str(plex.get("PLEX_URL", "")).strip():
-                issues.append("Plex URL is missing.")
+                issues.append(tr("Plex URL is missing.", lang=lang))
             if not str(plex.get("PLEX_TOKEN", "")).strip():
-                issues.append("Plex token is missing.")
+                issues.append(tr("Plex token is missing.", lang=lang))
             if not str(plex.get("LIBRARY_NAME", "")).strip():
-                issues.append("Plex library name is missing.")
+                issues.append(tr("Plex library name is missing.", lang=lang))
         return issues
 
     # At least one enabled library must be fully filled in
@@ -289,17 +298,18 @@ def config_issues(cfg: dict | None = None) -> list[str]:
         lib_type = lib.get("type", "plex").lower()
         if lib_type in ("jellyfin", "emby"):
             missing = []
-            if not lib.get("url"):          missing.append("URL")
-            if not lib.get("api_key"):      missing.append("API key")
-            if not lib.get("library_name"): missing.append("library name")
+            if not lib.get("url"):          missing.append(tr("URL", lang=lang))
+            if not lib.get("api_key"):      missing.append(tr("API key", lang=lang))
+            if not lib.get("library_name"): missing.append(tr("library name", lang=lang))
         else:
             missing = []
-            if not lib.get("url"):          missing.append("URL")
-            if not lib.get("token"):        missing.append("token")
-            if not lib.get("library_name"): missing.append("library name")
+            if not lib.get("url"):          missing.append(tr("URL", lang=lang))
+            if not lib.get("token"):        missing.append(tr("token", lang=lang))
+            if not lib.get("library_name"): missing.append(tr("library name", lang=lang))
 
         if missing:
-            lib_issues.append(f"{label}: {', '.join(missing)} missing.")
+            lib_issues.append(tr("{label}: {fields} missing.", lang=lang,
+                                  label=label, fields=", ".join(missing)))
         else:
             any_complete = True
 

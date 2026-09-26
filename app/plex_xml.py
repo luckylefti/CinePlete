@@ -3,6 +3,7 @@ import defusedxml.ElementTree as ET
 from collections import defaultdict
 
 from app.config import load_config
+from app.i18n import tr
 
 
 def _build_lib_cfg(lib_cfg):
@@ -11,25 +12,25 @@ def _build_lib_cfg(lib_cfg):
         url = lib_cfg.get("url", "").strip()
         if not url:
             label = lib_cfg.get("label") or lib_cfg.get("library_name") or "Plex"
-            raise RuntimeError(
-                f"Plex library '{label}' has no URL configured — "
-                "please fill in the URL in Config."
-            )
+            raise RuntimeError(tr(
+                "Plex library '{label}' has no URL configured — please fill in the URL in Config.",
+                label=label,
+            ))
         token = lib_cfg.get("token", "").strip()
         if not token:
             label = lib_cfg.get("label") or lib_cfg.get("library_name") or "Plex"
-            raise RuntimeError(
-                f"Plex library '{label}' has no token configured — "
-                "please fill in the Plex token in Config."
-            )
+            raise RuntimeError(tr(
+                "Plex library '{label}' has no token configured — please fill in the Plex token in Config.",
+                label=label,
+            ))
         return lib_cfg
     cfg = load_config()
     plex = cfg["PLEX"]
     url = plex.get("PLEX_URL", "").strip()
     if not url:
-        raise RuntimeError(
+        raise RuntimeError(tr(
             "Plex URL is not configured — please fill in the Plex URL in Config."
-        )
+        ))
     return {
         "url": url,
         "token": plex["PLEX_TOKEN"],
@@ -56,7 +57,8 @@ def library_key(lib_cfg=None):
     for d in root.findall("Directory"):
         if d.attrib.get("title") == lc["library_name"]:
             return d.attrib.get("key")
-    raise RuntimeError(f"Plex library '{lc['library_name']}' not found on {lc['url']}")
+    raise RuntimeError(tr("Plex library '{name}' not found on {url}",
+                          name=lc["library_name"], url=lc["url"]))
 
 
 def scan_movies(lib_cfg=None):

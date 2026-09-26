@@ -545,6 +545,15 @@ Configuration is stored in `config/config.yml` and editable from the **Config** 
 
 > ⚠️ Use the **API Key** found under TMDB → Settings → API → **API Key** (short alphanumeric string starting with letters/numbers). Do **not** use the Read Access Token (long JWT string starting with `eyJ`).
 
+**Language / Sprache:**
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `SERVER.UI_LANGUAGE` | `en` | Interface language: `en` or `de` (German) |
+| `TMDB.TMDB_LANGUAGE` | `en-US` | Language of titles, overviews and collection names fetched from TMDB, e.g. `de-DE`. Missing translated overviews fall back to English; trailers in that language are preferred. The region part also sets the *In Theaters* region. |
+
+Both are set from **Config → Language** at the top of the settings page. Changing the TMDB language refetches titles on the next scan (separate cache entries; the `en-US` cache stays valid).
+
 **Libraries (v3.0+):**
 
 Libraries are configured from **Config → Libraries** in the UI. Each library entry includes:

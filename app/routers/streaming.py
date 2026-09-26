@@ -9,6 +9,7 @@ from fastapi import APIRouter
 
 from app.config import load_config
 from app.tmdb import TMDB
+from app.i18n import tr
 
 router = APIRouter()
 log    = logging.getLogger("cineplete")
@@ -38,7 +39,7 @@ def get_streaming(tmdb_id: int):
     cfg     = load_config()
     api_key = cfg.get("TMDB", {}).get("TMDB_API_KEY", "")
     if not api_key:
-        return {"ok": False, "error": "TMDB not configured", "providers": [], "link": ""}
+        return {"ok": False, "error": tr("TMDB not configured"), "providers": [], "link": ""}
 
     country   = cfg.get("STREAMING", {}).get("STREAMING_COUNTRY", "US")
     cache_key = f"{tmdb_id}:{country}"

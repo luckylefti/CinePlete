@@ -12,6 +12,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse
 
 from app.config import load_config, is_configured
+from app.i18n import tr
 from app.overrides import load_json as _load_overrides
 from app.scanner import build_async, scan_state, _scan_lock
 from app.routers._shared import log, read_results, LOG_FILE, OVERRIDES_FILE
@@ -103,14 +104,14 @@ def api_results():
 @router.post("/api/scan")
 def api_scan():
     if not is_configured():
-        return {"ok": False, "error": "Setup required"}
+        return {"ok": False, "error": tr("Setup required")}
 
     if scan_state["running"]:
-        return {"ok": False, "error": "Scan already in progress"}
+        return {"ok": False, "error": tr("Scan already in progress")}
 
     launched = build_async()
     if not launched:
-        return {"ok": False, "error": "Could not acquire scan lock"}
+        return {"ok": False, "error": tr("Could not acquire scan lock")}
 
     return {"ok": True, "message": "Scan started"}
 
@@ -144,11 +145,11 @@ def api_movie_detail(tmdb_id: int):
     cfg     = load_config()
     api_key = cfg.get("TMDB", {}).get("TMDB_API_KEY")
     if not api_key:
-        return {"error": "TMDB not configured"}
+        return {"error": tr("TMDB not configured")}
     t  = TMDB(api_key)
     md = t.movie(tmdb_id)
     if not md:
-        return {"error": "Movie not found"}
+        return {"error": tr("Movie not found")}
     credits_url = (
         f"https://api.themoviedb.org/3/movie/{tmdb_id}/credits"
         f"?api_key={api_key}"
@@ -171,14 +172,22 @@ def api_movie_detail(tmdb_id: int):
         f"https://api.themoviedb.org/3/movie/{tmdb_id}/videos"
         f"?api_key={api_key}"
     )
+    # A localized request returns ONLY trailers in that language — also accept
+    # English/untagged ones so a film without a dubbed trailer still gets one.
+    video_lang = t.language.split("-")[0]
+    if t.language != "en-US":
+        videos_url += f"&include_video_language={video_lang},en,null"
     videos_data = t.get(videos_url)
+    # TMDB does not order by language — put trailers in the UI language first
+    videos = sorted(videos_data.get("results") or [],
+                    key=lambda v: v.get("iso_639_1") != video_lang)
     trailer_key = None
-    for v in (videos_data.get("results") or []):
+    for v in videos:
         if v.get("site") == "YouTube" and v.get("type") == "Trailer" and v.get("official"):
             trailer_key = v["key"]
             break
     if not trailer_key:
-        for v in (videos_data.get("results") or []):
+        for v in videos:
             if v.get("site") == "YouTube" and v.get("type") == "Trailer":
                 trailer_key = v.get("key")
                 break

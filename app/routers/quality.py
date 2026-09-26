@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter
 
 from app.config import load_config
+from app.i18n import tr
 
 router = APIRouter()
 log    = logging.getLogger("cineplete")
@@ -82,20 +83,20 @@ def get_quality_upgrades():
     radarr4k = cfg.get("RADARR_4K", {})
 
     if not radarr.get("RADARR_ENABLED"):
-        result = {"ok": False, "error": "Radarr not enabled", "movies": [], "count": 0}
+        result = {"ok": False, "error": tr("Radarr not enabled"), "movies": [], "count": 0}
         _cache.update({"data": result, "ts": now})
         return result
 
     url = str(radarr.get("RADARR_URL", "")).rstrip("/")
     key = str(radarr.get("RADARR_API_KEY", "")).strip()
     if not url or urlparse(url).scheme not in ("http", "https"):
-        result = {"ok": False, "error": "Radarr URL not configured", "movies": [], "count": 0}
+        result = {"ok": False, "error": tr("Radarr URL not configured"), "movies": [], "count": 0}
         _cache.update({"data": result, "ts": now})
         return result
 
     primary_movies = _fetch_radarr_movies(url, key)
     if not primary_movies:
-        result = {"ok": False, "error": "Could not reach Radarr", "movies": [], "count": 0}
+        result = {"ok": False, "error": tr("Could not reach Radarr"), "movies": [], "count": 0}
         _cache.update({"data": result, "ts": now})
         return result
 

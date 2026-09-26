@@ -8,6 +8,7 @@ from app.config import load_config
 from app.tmdb import TMDB
 from app.overrides import load_json, save_json, remove_value
 from app.logger import get_logger
+from app.i18n import tr, ui_language
 from app import telegram
 
 DATA_DIR = os.getenv("DATA_DIR", "/data")
@@ -46,12 +47,23 @@ STEPS = [
 ]
 
 
-def _set_step(index: int, detail: str = "", label: str = ""):
-    step_label = label or STEPS[index]
-    scan_state["step"]       = step_label
+def _set_step(index: int, detail: str = "", label: str = "",
+              lang: str | None = None, raw_detail: str = "", **fmt):
+    """Publish scan progress.
+
+    `label` (default STEPS[index]) and `detail` are English templates with
+    str.format placeholders filled from `fmt`: scan_state gets the UI-language
+    text (shown in the frontend), the log line stays English. `raw_detail` is
+    data (e.g. library names) and is passed through untranslated.
+    """
+    label_en  = (label or STEPS[index]).format(**fmt) if fmt else (label or STEPS[index])
+    detail_en = raw_detail or (detail.format(**fmt) if fmt and detail else detail)
+    # STEPS / label / detail are the fixed English templates of this module —
+    # each one has an entry in app.i18n.DE.
+    scan_state["step"]       = tr(label or STEPS[index], lang=lang, **fmt)
     scan_state["step_index"] = index + 1
-    scan_state["detail"]     = detail
-    log.info(f"[{index + 1}/{len(STEPS)}] {step_label}{' — ' + detail if detail else ''}")
+    scan_state["detail"]     = raw_detail or (tr(detail, lang=lang, **fmt) if detail else "")
+    log.info(f"[{index + 1}/{len(STEPS)}] {label_en}{' — ' + detail_en if detail_en else ''}")
 
 
 # --------------------------------------------------
@@ -593,7 +605,8 @@ def build():
 
     # ---- CONFIG -----------------------------------------------
     _set_step(0)
-    cfg = load_config()
+    cfg  = load_config()
+    lang = ui_language(cfg)   # once per scan, not per tr() call
 
     classics_cfg    = cfg.get("CLASSICS", {})
     actor_hits_cfg  = cfg.get("ACTOR_HITS", {})
@@ -612,7 +625,7 @@ def build():
 
     if not tmdb_api_key:
         log.error("TMDB_API_KEY is missing from config — scan cannot continue")
-        raise RuntimeError("TMDB_API_KEY missing in config")
+        raise RuntimeError(tr("TMDB_API_KEY missing in config", lang=lang))
 
     # Quick sanity check — validate the API key before running the full scan
     log.debug("Validating TMDB API key...")
@@ -620,7 +633,7 @@ def build():
     if not test.movie(603):   # The Matrix — reliable test target
         log.error("TMDB API key validation failed — all movie lookups will return empty. "
                   "Check your TMDB_API_KEY in config.")
-        raise RuntimeError("TMDB API key invalid or unreachable")
+        raise RuntimeError(tr("TMDB API key invalid or unreachable", lang=lang))
 
     os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -639,14 +652,14 @@ def build():
     libraries    = cfg.get("LIBRARIES", [])
     enabled_libs = [l for l in libraries if l.get("enabled", True)]
     if not enabled_libs:
-        raise RuntimeError("No libraries enabled — enable at least one library in Config")
+        raise RuntimeError(tr("No libraries enabled — enable at least one library in Config", lang=lang))
 
     lib_labels = ", ".join(
         f"{l.get('type','plex').title()} ({l.get('library_name','?')})"
         for l in enabled_libs
     )
-    _set_step(1, lib_labels,
-              label=f"Scanning {len(enabled_libs)} librar{'y' if len(enabled_libs)==1 else 'ies'}")
+    _set_step(1, raw_detail=lib_labels, lang=lang, n=len(enabled_libs),
+              label="Scanning {n} library" if len(enabled_libs) == 1 else "Scanning {n} libraries")
 
     # Validate each library's required fields before starting any threads
     for lib in enabled_libs:
@@ -654,20 +667,21 @@ def build():
         lib_label = lib.get("label") or lib.get("library_name") or lib_type.capitalize()
         missing   = []
         if not lib.get("url", "").strip():
-            missing.append("URL")
+            missing.append(tr("URL", lang=lang))
         if lib_type in ("jellyfin", "emby"):
             if not lib.get("api_key", "").strip():
-                missing.append("API key")
+                missing.append(tr("API key", lang=lang))
         else:
             if not lib.get("token", "").strip():
-                missing.append("token")
+                missing.append(tr("token", lang=lang))
         if not lib.get("library_name", "").strip():
-            missing.append("library name")
+            missing.append(tr("library name", lang=lang))
         if missing:
-            raise RuntimeError(
-                f"{lib_label} library is missing: {', '.join(missing)} — "
-                "please complete the library settings in Config."
-            )
+            # The message becomes scan_state["error"] ("Scan failed: …" toast)
+            raise RuntimeError(tr(
+                "{label} library is missing: {fields} — please complete the library settings in Config.",
+                lang=lang, label=lib_label, fields=", ".join(missing),
+            ))
 
     def _scan_one(lib):
         lib_type = lib.get("type", "plex").lower()
@@ -777,7 +791,7 @@ def build():
 
     # ---- TMDB VALIDATION --------------------------------------
     sections["metadata"] = "computing"
-    _set_step(2, f"{len(plex_ids)} movies")
+    _set_step(2, "{n} movies", lang=lang, n=len(plex_ids))
     _partial_write(acc, sections)
     tmdb_not_found = []
     for mid in plex_ids:
@@ -790,7 +804,7 @@ def build():
 
     # ---- COLLECTIONS ------------------------------------------
     sections["franchises"] = "computing"
-    _set_step(3)
+    _set_step(3, lang=lang)
     _partial_write(acc, sections)
     franchises, franchise_completion = _analyze_collections(
         plex_ids, tmdb, ignore_franchises, ignore_movies, wishlist_movies
@@ -802,7 +816,7 @@ def build():
 
     # ---- DIRECTORS --------------------------------------------
     sections["directors"] = "computing"
-    _set_step(4, f"{len(directors_map)} directors")
+    _set_step(4, "{n} directors", lang=lang, n=len(directors_map))
     _partial_write(acc, sections)
     directors, director_missing_total = _analyze_directors(
         directors_map, plex_ids, tmdb, ignore_directors, ignore_movies, wishlist_movies
@@ -824,7 +838,7 @@ def build():
 
     # ---- SUGGESTIONS (based on your library) ------------------
     sections["suggestions"] = "computing"
-    _set_step(5, f"{len(plex_ids)} library films")
+    _set_step(5, "{n} library films", lang=lang, n=len(plex_ids))
     _partial_write(acc, sections)
     suggestions = _build_suggestions(
         plex_ids, tmdb, overrides, ignore_movies, wishlist_movies,
@@ -836,7 +850,7 @@ def build():
 
     # ---- ACTORS -----------------------------------------------
     sections["actors"] = "computing"
-    _set_step(6, f"{len(actors_map)} actors")
+    _set_step(6, "{n} actors", lang=lang, n=len(actors_map))
     _partial_write(acc, sections)
     actors, actor_missing_total = _analyze_actors(
         actors_map, plex_ids, tmdb, ignore_actors, ignore_movies, wishlist_movies,
@@ -852,7 +866,7 @@ def build():
 
     # ---- SCORES -----------------------------------------------
     sections["scores"] = "computing"
-    _set_step(7)
+    _set_step(7, lang=lang)
     _partial_write(acc, sections)
     actor_counts = Counter({k: len(v) for k, v in actors_map.items()})
     top_actors   = [{"name": n, "count": c} for n, c in actor_counts.most_common(40)]

@@ -29,15 +29,15 @@ function setStatus(txt){ document.getElementById("status").textContent = txt }
 function fmtDate(iso){
   if (!iso) return ""
   try {
-    return new Date(iso).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})
+    return new Date(iso).toLocaleString(LOCALE,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})
   } catch(e){ return iso }
 }
 
 function fmtDuration(s){
   if (!s && s !== 0) return ""
-  if (s < 60) return `${s}s`
+  if (s < 60) return t("{s}s", {s})
   const m = Math.floor(s/60), sec = s%60
-  return sec ? `${m}m ${sec}s` : `${m}m`
+  return sec ? t("{m}m {sec}s", {m, sec}) : t("{m}m", {m})
 }
 
 function escHtml(str){

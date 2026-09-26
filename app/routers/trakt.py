@@ -16,6 +16,7 @@ import requests
 from fastapi import APIRouter, Body
 
 from app.config import load_config, save_config, CONFIG_FILE, ensure_config_dir
+from app.i18n import tr
 
 router = APIRouter()
 log    = logging.getLogger("cineplete")
@@ -143,7 +144,7 @@ def trakt_device_code(payload: dict = Body(...)):
     client_secret = str(payload.get("client_secret", "")).strip()
 
     if not client_id:
-        return {"ok": False, "error": "Client ID is required"}
+        return {"ok": False, "error": tr("Client ID is required")}
 
     # Retry once on network error — Docker DNS can be slow after container start
     r = None
@@ -158,12 +159,12 @@ def trakt_device_code(payload: dict = Body(...)):
             break  # success — stop retrying
         except requests.exceptions.RequestException as e:
             if attempt == 2:
-                return {"ok": False, "error": f"Could not reach Trakt API: {e}"}
+                return {"ok": False, "error": tr("Could not reach Trakt API: {e}", e=e)}
             log.warning(f"Trakt device code: network error, retrying in 3 s — {e}")
             time.sleep(3)
 
     if r.status_code != 200:
-        return {"ok": False, "error": f"Trakt returned HTTP {r.status_code}"}
+        return {"ok": False, "error": tr("Trakt returned HTTP {code}", code=r.status_code)}
 
     data = r.json()
     return {
@@ -189,7 +190,7 @@ def trakt_device_poll(payload: dict = Body(...)):
     device_code   = str(payload.get("device_code", "")).strip()
 
     if not all([client_id, client_secret, device_code]):
-        return {"ok": False, "status": "error", "error": "Missing required fields"}
+        return {"ok": False, "status": "error", "error": tr("Missing required fields")}
 
     try:
         r = requests.post(

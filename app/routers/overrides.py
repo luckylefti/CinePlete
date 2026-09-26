@@ -10,6 +10,7 @@ from fastapi import APIRouter, Body
 
 from app.overrides import load_json, save_json, add_unique, remove_value
 from app.routers._shared import OVERRIDES_FILE, _parse_tmdb_id
+from app.i18n import tr
 
 router = APIRouter()
 
@@ -27,7 +28,7 @@ def api_ignore(payload: dict = Body(...)):
     if kind == "movie":
         tmdb_id = _parse_tmdb_id(value)
         if tmdb_id is None:
-            return {"ok": False, "error": "Invalid TMDB ID"}
+            return {"ok": False, "error": tr("Invalid TMDB ID")}
         add_unique(ov["ignore_movies"], tmdb_id)
         ov.setdefault("ignore_movies_meta", {})[str(tmdb_id)] = {
             "title":  payload.get("title", ""),
@@ -41,7 +42,7 @@ def api_ignore(payload: dict = Body(...)):
     elif kind == "actor":
         add_unique(ov["ignore_actors"], str(value))
     else:
-        return {"ok": False, "error": f"Unknown kind: {kind}"}
+        return {"ok": False, "error": tr("Unknown kind: {kind}", kind=kind)}
 
     save_json(OVERRIDES_FILE, ov)
     return {"ok": True}
@@ -56,7 +57,7 @@ def api_unignore(payload: dict = Body(...)):
     if kind == "movie":
         tmdb_id = _parse_tmdb_id(value)
         if tmdb_id is None:
-            return {"ok": False, "error": "Invalid TMDB ID"}
+            return {"ok": False, "error": tr("Invalid TMDB ID")}
         remove_value(ov["ignore_movies"], tmdb_id)
         ov.setdefault("ignore_movies_meta", {}).pop(str(tmdb_id), None)
     elif kind == "franchise":
@@ -66,7 +67,7 @@ def api_unignore(payload: dict = Body(...)):
     elif kind == "actor":
         remove_value(ov["ignore_actors"], str(value))
     else:
-        return {"ok": False, "error": f"Unknown kind: {kind}"}
+        return {"ok": False, "error": tr("Unknown kind: {kind}", kind=kind)}
 
     save_json(OVERRIDES_FILE, ov)
     return {"ok": True}

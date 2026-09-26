@@ -10,6 +10,7 @@ import requests
 from collections import defaultdict
 
 from app.config import load_config
+from app.i18n import tr
 from app.logger import get_logger
 
 log = get_logger(__name__)
@@ -42,10 +43,11 @@ def _jf_get(path: str, lib_cfg=None, params: dict = None, timeout: int = 120) ->
         r.raise_for_status()
         return r.json()
     except requests.exceptions.ConnectionError as exc:
-        raise RuntimeError(
-            f"Cannot connect to Jellyfin at {lc['url']} — "
-            "check url in config and that Jellyfin is reachable"
-        ) from exc
+        # User-facing: shown as scan error / connection-test result
+        raise RuntimeError(tr(
+            "Cannot connect to Jellyfin at {url} — check url in config and that Jellyfin is reachable",
+            url=lc["url"],
+        )) from exc
 
 
 def _library_id(library_name: str, lib_cfg=None) -> str:
@@ -54,7 +56,7 @@ def _library_id(library_name: str, lib_cfg=None) -> str:
     for item in data.get("Items", []):
         if item.get("Name", "").lower() == library_name.lower():
             return item["Id"]
-    raise RuntimeError(f"Jellyfin library '{library_name}' not found")
+    raise RuntimeError(tr("Jellyfin library '{name}' not found", name=library_name))
 
 
 def scan_movies(lib_cfg=None):
