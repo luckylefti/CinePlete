@@ -98,6 +98,10 @@ def library_test(payload: dict = Body(...)):
                 return {"ok": False, "error": tr("URL must start with http:// or https://")}
             r = _req.get(f"{url}{prefix}/Library/MediaFolders",
                          headers={"X-Emby-Token": key}, timeout=10)
+            if r.status_code in (401, 403):
+                return {"ok": False, "error": tr(
+                    "{name} rejected the API key (HTTP {code}) — check the API key in Settings → Libraries",
+                    name=name, code=r.status_code)}
             r.raise_for_status()
             folders = [i.get("Name","") for i in r.json().get("Items",[])]
             if lib and lib not in folders:

@@ -238,3 +238,17 @@ class TestRejectedMediaServerKey(unittest.TestCase):
             tr("{name} rejected the API key (HTTP {code}) — check the API key in Settings → Libraries",
                lang="de", name="Jellyfin", code=401),
             "Jellyfin lehnt den API-Schlüssel ab (HTTP 401) — bitte den API-Schlüssel unter Einstellungen → Bibliotheken prüfen")
+
+
+class TestLibraryTestEndpointRejectedKey(unittest.TestCase):
+
+    def test_jellyfin_401_is_readable(self):
+        from unittest.mock import MagicMock
+        import requests
+        from app.routers import config as cfg_router
+        with patch.object(requests, "get", return_value=MagicMock(status_code=401)), \
+             patch.object(cfg_router, "tr", side_effect=lambda s, **kw: s.format(**kw)):
+            res = cfg_router.library_test({"type": "jellyfin", "url": "http://192.168.1.4:8096",
+                                           "api_key": "abc", "library_name": "Filme"})
+        self.assertFalse(res["ok"])
+        self.assertIn("Jellyfin rejected the API key (HTTP 401)", res["error"])
