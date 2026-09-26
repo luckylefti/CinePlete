@@ -49,6 +49,13 @@ def _emby_get(path: str, lib_cfg=None, params: dict = None, timeout: int = 120) 
 
     try:
         r = requests.get(url, headers=headers, params=params or {}, timeout=timeout)
+        # A rejected key is a settings problem, not a crash — say so instead of a raw HTTPError
+        if r.status_code in (401, 403):
+            if not str(lc.get("api_key") or "").strip():
+                raise RuntimeError(tr("No {name} API key configured — enter it in Settings → Libraries",
+                                      name="Emby"))
+            raise RuntimeError(tr("{name} rejected the API key (HTTP {code}) — check the API key in Settings → Libraries",
+                                  name="Emby", code=r.status_code))
         r.raise_for_status()
         return r.json()
     except requests.exceptions.ConnectionError as exc:

@@ -59,6 +59,11 @@ DE: dict[str, str] = {
     "Cannot connect to Emby at {url} — check url in config and that Emby is reachable":
         "Keine Verbindung zu Emby unter {url} — prüfen Sie die URL in den Einstellungen und ob Emby erreichbar ist",
 
+    "No {name} API key configured — enter it in Settings → Libraries":
+        "Kein {name}-API-Schlüssel eingerichtet — bitte unter Einstellungen → Bibliotheken eintragen",
+    "{name} rejected the API key (HTTP {code}) — check the API key in Settings → Libraries":
+        "{name} lehnt den API-Schlüssel ab (HTTP {code}) — bitte den API-Schlüssel unter Einstellungen → Bibliotheken prüfen",
+
     # ---- Setup check (app/config.py config_issues) ----
     "TMDB API key is missing.":          "TMDB-API-Schlüssel fehlt.",
     "Jellyfin URL is missing.":          "Jellyfin-URL fehlt.",

@@ -204,3 +204,37 @@ class TestBackendCoverage(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRejectedMediaServerKey(unittest.TestCase):
+    """HTTP 401/403 from Jellyfin/Emby becomes a readable settings hint, not a raw HTTPError."""
+
+    def _call(self, module, api_key, status=401):
+        from unittest.mock import MagicMock
+        resp = MagicMock(status_code=status)
+        lib  = {"url": "http://192.168.1.4:8096", "api_key": api_key}
+        getter = module._jf_get if hasattr(module, "_jf_get") else module._emby_get
+        with patch.object(module.requests, "get", return_value=resp), \
+             patch.object(module, "tr", side_effect=lambda s, **kw: s.format(**kw)):
+            with self.assertRaises(RuntimeError) as ctx:
+                getter("/Library/MediaFolders", lib)
+        return str(ctx.exception)
+
+    def test_jellyfin_wrong_key(self):
+        from app import jellyfin_api
+        msg = self._call(jellyfin_api, "abc")
+        self.assertIn("Jellyfin rejected the API key (HTTP 401)", msg)
+
+    def test_jellyfin_missing_key(self):
+        from app import jellyfin_api
+        self.assertIn("No Jellyfin API key configured", self._call(jellyfin_api, ""))
+
+    def test_emby_forbidden(self):
+        from app import emby_api
+        self.assertIn("Emby rejected the API key (HTTP 403)", self._call(emby_api, "abc", 403))
+
+    def test_german_text(self):
+        self.assertEqual(
+            tr("{name} rejected the API key (HTTP {code}) — check the API key in Settings → Libraries",
+               lang="de", name="Jellyfin", code=401),
+            "Jellyfin lehnt den API-Schlüssel ab (HTTP 401) — bitte den API-Schlüssel unter Einstellungen → Bibliotheken prüfen")
