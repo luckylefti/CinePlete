@@ -11,6 +11,7 @@ import requests
 from fastapi import APIRouter, Body
 from urllib.parse import urlparse
 
+from app.mediaserver_auth import auth_headers
 from app.config import load_config, save_config, is_configured, config_issues
 from app.auth import hash_password, generate_secret_key
 from app import scheduler
@@ -97,7 +98,7 @@ def library_test(payload: dict = Body(...)):
             if urlparse(url).scheme not in ("http", "https"):
                 return {"ok": False, "error": tr("URL must start with http:// or https://")}
             r = _req.get(f"{url}{prefix}/Library/MediaFolders",
-                         headers={"X-Emby-Token": key}, timeout=10)
+                         headers=auth_headers(key), timeout=10)
             if r.status_code in (401, 403):
                 return {"ok": False, "error": tr(
                     "{name} rejected the API key (HTTP {code}) — check the API key in Settings → Libraries",
@@ -158,7 +159,7 @@ def _test_emby_like(url: str, token: str, library: str, path_prefix: str, server
     except Exception:
         return {"ok": False, "error": tr("Invalid URL format")}
 
-    headers = {"X-Emby-Token": token}
+    headers = auth_headers(token)
 
     try:
         r = requests.get(f"{url}{path_prefix}/System/Info", headers=headers, timeout=10)

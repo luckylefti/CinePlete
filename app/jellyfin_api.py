@@ -9,6 +9,7 @@ so scanner.py needs no logic changes.
 import requests
 from collections import defaultdict
 
+from app.mediaserver_auth import auth_headers
 from app.config import load_config
 from app.i18n import tr
 from app.logger import get_logger
@@ -35,7 +36,7 @@ def _jf_get(path: str, lib_cfg=None, params: dict = None, timeout: int = 120) ->
     """Make an authenticated GET request to Jellyfin and return JSON."""
     lc = _build_lib_cfg(lib_cfg)
 
-    headers = {"X-Emby-Token": lc["api_key"]}
+    headers = auth_headers(lc["api_key"])
     url     = lc["url"].rstrip("/") + path
 
     try:

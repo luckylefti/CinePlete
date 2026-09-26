@@ -15,6 +15,7 @@ on every path:
 import requests
 from collections import defaultdict
 
+from app.mediaserver_auth import auth_headers
 from app.config import load_config
 from app.i18n import tr
 from app.logger import get_logger
@@ -44,7 +45,7 @@ def _emby_get(path: str, lib_cfg=None, params: dict = None, timeout: int = 120) 
     """Make an authenticated GET request to Emby and return JSON."""
     lc = _build_lib_cfg(lib_cfg)
 
-    headers = {"X-Emby-Token": lc["api_key"]}
+    headers = auth_headers(lc["api_key"])
     url     = lc["url"].rstrip("/") + _EMBY_PREFIX + path
 
     try:

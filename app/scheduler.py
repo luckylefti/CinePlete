@@ -15,6 +15,7 @@ import requests
 import defusedxml.ElementTree as ET
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from app.mediaserver_auth import auth_headers
 from app.config import load_config
 from app.logger import get_logger
 
@@ -98,7 +99,7 @@ def _get_emby_like_movie_count(lib: dict, path_prefix: str, server_name: str) ->
 
         r = requests.get(
             f"{url}{path_prefix}/Library/MediaFolders",
-            headers={"X-Emby-Token": token},
+            headers=auth_headers(token),
             timeout=10,
         )
         r.raise_for_status()
@@ -116,7 +117,7 @@ def _get_emby_like_movie_count(lib: dict, path_prefix: str, server_name: str) ->
 
         r2 = requests.get(
             f"{url}{path_prefix}/Items",
-            headers={"X-Emby-Token": token},
+            headers=auth_headers(token),
             params={
                 "ParentId":         lib_id,
                 "IncludeItemTypes": "Movie",
