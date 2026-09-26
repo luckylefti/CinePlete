@@ -1,0 +1,71 @@
+name: Fork image (GHCR)
+
+# Builds the fork's image and publishes it to ghcr.io/<owner>/cineplete.
+# Runs only outside the upstream repo — upstream publishes to Docker Hub
+# via docker.yml, which needs secrets a fork does not have.
+#
+#   main         → :latest + :<sha>
+#   other branch → :<branch> + :<sha>
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    if: github.repository_owner != 'sdblepas'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Unit tests
+        run: |
+          pip install pytest pyyaml apscheduler defusedxml fastapi httpx requests
+          pytest --tb=short -q
+
+      - name: Image name and tags
+        id: meta
+        run: |
+          owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          image="ghcr.io/${owner}/cineplete"
+          branch=$(echo "${GITHUB_REF_NAME}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+          sha=${GITHUB_SHA::7}
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            tags="${image}:latest,${image}:${sha}"
+          else
+            tags="${image}:${branch},${image}:${sha}"
+          fi
+          echo "tags=${tags}" >> "$GITHUB_OUTPUT"
+          echo "version=fork-${sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (linux/amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: VERSION=${{ steps.meta.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
