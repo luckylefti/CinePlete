@@ -30,3 +30,27 @@ class TestAuthHeaders(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCollectionsAreNotMovies(unittest.TestCase):
+    """Jellyfin collections (BoxSet, TMDB collection ID) must not land in the movie list."""
+
+    def test_boxset_and_folder_skipped(self):
+        from app import jellyfin_api
+        items = [
+            {"Name": "Kevin – Allein zu Haus", "Type": "Movie", "IsFolder": False,
+             "ProviderIds": {"Tmdb": "771"}, "RunTimeTicks": 6_000_000_000 * 10},
+            {"Name": "Allein zu Haus Filmreihe", "Type": "BoxSet", "IsFolder": True,
+             "ProviderIds": {"Tmdb": "9888"}},
+            {"Name": "Ordner", "Type": "Folder", "IsFolder": True, "ProviderIds": {"Tmdb": "1"}},
+        ]
+
+        def fake(path, lc=None, params=None, timeout=120):
+            if path == "/Library/MediaFolders":
+                return {"Items": [{"Name": "Filme", "Id": "lib1"}]}
+            self.assertEqual(params.get("ExcludeItemTypes"), "BoxSet")
+            return {"Items": items if params["StartIndex"] == 0 else [], "TotalRecordCount": len(items)}
+
+        with patch.object(jellyfin_api, "_jf_get", side_effect=fake):
+            media_ids, *_ = jellyfin_api.scan_movies({"url": "http://jf", "api_key": "k", "library_name": "Filme"})
+        self.assertEqual(media_ids, {771: "Kevin – Allein zu Haus"})

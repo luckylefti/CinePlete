@@ -105,11 +105,13 @@ def scan_movies(lib_cfg=None):
     start         = 0
     scanned       = 0
     skipped_short = 0
+    skipped_non_movie = 0
 
     while True:
         data = _emby_get("/Items", lc, {
             "ParentId":         library_id,
             "IncludeItemTypes": "Movie",
+            "ExcludeItemTypes": "BoxSet",
             "Recursive":        "true",
             "Fields":           "ProviderIds,People,RunTimeTicks",
             "StartIndex":       start,
@@ -121,6 +123,12 @@ def scan_movies(lib_cfg=None):
             break
 
         for item in items:
+            # Collections ("… Filmreihe", TMDB collection IDs) and folders are never
+            # movies — some Jellyfin versions return them despite IncludeItemTypes,
+            # and their collection ID then shows up as "TMDB No Match".
+            if item.get("IsFolder") or item.get("Type", "Movie") != "Movie":
+                skipped_non_movie += 1
+                continue
             scanned += 1
 
             title = item.get("Name", "")
@@ -175,6 +183,9 @@ def scan_movies(lib_cfg=None):
         start += len(items)
         if start >= total:
             break
+
+    if skipped_non_movie:
+        log.info(f"Emby library '{library_name}': skipped {skipped_non_movie} collection/folder items")
 
     # Only keep directors/actors appearing in 2+ films
     directors = {k: v for k, v in directors.items() if len(v) > 1}
